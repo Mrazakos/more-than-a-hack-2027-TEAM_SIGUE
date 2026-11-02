@@ -1,102 +1,71 @@
-"""Current strongest settings in this repository's rule-based starter. No flags needed:
+"""Possession labels from the team's own rules -- the best settings so far. No flags needed:
 
     python starter/best_so_far.py
     python evaluation/run_evaluation.py --bootstrap 1000
 
-writes evaluation/results/best_so_far.csv.
+writes evaluation/results/best_so_far.csv. Public window (17 possessions in the truth):
+spellF1 0.7333, macroF1 0.9340, transF1 0.541, 13 possessions.
 
-Public-window score (evaluation/run_evaluation.py): spellF1 0.6207, macroF1 0.8819.
+The rules, in the order they act (the numbers are the ones used while they were built; 3, 10
+and 12 were tried and taken out, and so was a flight rule in 2):
 
-Compared with the earlier 0.5600/0.8698 setup, this version adds: a stricter flight-speed cut,
-active-ball guards on stoppage rewinds, tagged goal-kick and throw-in handling, and a short
-anti-flicker filter for brief opponent handovers. The same CLI flags remain available; with any
-flag the file is written as best_so_far_custom.csv.
-
-Possession from the team's own rules, written from scratch after watching the public window.
-
-The rules, in the order they act:
-
-  0. A goalkeeper slot belongs to the team defending the goal on its side of halfway. The ATD
-     gives each team one goalkeeper slot, but starter/keeper_check.py shows them on the wrong half
-     for long stretches -- Athletic's slot 46 for ~11 minutes of play (16-230 s at a time),
-     Barcelona's slot 24 for ~1 minute -- following the other team's keeper; every touch by that
-     keeper then went to the wrong team. --no-keepers turns this off.
-
-  1. Before the kickoff, the ball is dead. The kickoff is the first frame after Smart Tagging's
-     "Kick Off (Start)" tag on which the ball is seen moving (the tag opens a few seconds early);
-     the team nearest the ball then has it. Applied to both halves.
-  2. Who has the ball -- one of two ownership rules, chosen with --ownership:
-     nearest (the default)  a touch: the team of the player nearest the ball has it from the
-                            first frame he is within TOUCH_RADIUS (0.4 m); with nobody that close
-                            -- a ball in the air, or loose -- the last team keeps it
-     touch                  the ball changes hands only when its path changes at a player: it
-                            turns or changes speed within TOUCH_RADIUS of him, or he keeps a slow
-                            ball within TOUCH_RADIUS for CONTROL_FRAMES. A ball in the air
-                            passes over players without touching them; a turn with nobody within
-                            TOUCH_RADIUS is the ball landing or bouncing, and changes nothing
-     From possession_v3, with --no-flight / --no-backdate to turn them off:
-     - a ball faster than FLIGHT_SPEED is travelling, not at anyone's feet: nobody touches it;
-     - a change of team is moved back to the frame after the old team last touched the ball (at
-       most BACKDATE_MAX): the ball changed hands when it left them, not when it arrived.
-  3. A goalkeeper's throw or kick: a ball leaving a team's own penalty area faster than
-     LAUNCH_SPEED while that team has it stays with that team until the first touch (a player
-     within TOUCH_RADIUS) after it left the keeper. --no-launch turns this off.
-  4. A ball that leaves the pitch -- over a goal line or a touchline, by any distance, on a single
-     frame -- is dead. Over a touchline play restarts with the next touch (a throw-in).
-     Over a goal line, it is dead. If a Smart Tagging corner follows
-     (within EXIT_TAG_WINDOW), it is a corner: dead until the first kick after the tag, which goes
+  0. A goalkeeper slot belongs to the team defending the goal on its side of halfway: the ATD's
+     goalkeeper slots follow the other team's keeper for minutes at a time. --no-keepers: off.
+  1. Before the kickoff the ball is dead. The kickoff is the first frame after Smart Tagging's
+     "Kick Off (Start)" tag with the ball seen moving faster than KICK_SPEED (within KICK_SEARCH);
+     the team nearest the ball has it. Both halves.
+  2. [FLAG] Who has the ball: the team of the nearest player, from the first frame he is within
+     TOUCH_RADIUS (1.5 m, --nearest-radius); with nobody that close the last team keeps it.
+     Backdating: a change of team is moved back to the frame after the old team last touched the
+     ball, at most BACKDATE_MAX (3 s) -- --no-backdate turns it off.
+  4. A ball over a goal line or a touchline, by any distance, on one frame, is dead. Over a
+     touchline play restarts with the next touch (a throw-in). Over a goal line with a Smart
+     Tagging corner within EXIT_TAG_WINDOW: dead until the first kick after the tag, which goes
      to the tagged team.
-  5. Otherwise it is a goal kick: dead until the ball has stood still (PLACED_SPEED) inside a
-     penalty area for at least --placed-seconds and then moves off (KICK_SPEED); it goes to the
-     team defending that goal.
-     If neither shows up, play restarts with the next touch (FALLBACK).
-  6. A goal, from possession_v3: Smart Tagging's "Kick Off (After Goal)" tags. Dead from the last
-     goal-line exit before the tag (at most GOAL_LOOKBACK earlier; else from the tag) until the
-     kick, the first frame after the tag with the ball seen moving; the team nearest the ball
-     then has it.
-
-  7. A free kick, from Smart Tagging's "Free Kick" tags (the file has only 5 for the match, and no
-     offside or foul tags). Dead from when the ball went quiet before the tag -- slower than
-     QUIET_SPEED (smoothed) or not seen, at most FK_LOOKBACK earlier -- until the first kick after
-     the tag, which goes to the tagged team. --no-free-kicks turns this off.
-
-  8. --slow-stop: a stoppage nobody tagged (a foul, an offside). Dead while the players walk --
-     tempo (median player speed, 2 s average) below SLOW_TEMPO -- and the ball is slower than
+  5. [FLAG] Otherwise a goal kick: dead until the ball has stood still (PLACED_SPEED) inside a
+     penalty area for PLACED_SECONDS and then moves off (KICK_SPEED); it goes to the team
+     defending that goal. If neither shows up, play restarts with the next touch.
+     --no-goal-kick: always the next touch.
+  6. A goal (Smart Tagging's "Kick Off (After Goal)" tags): dead from the last goal-line exit
+     before the tag (at most GOAL_LOOKBACK earlier) until the kick after the tag; the team
+     nearest the ball then has it.
+  7. A free kick from Smart Tagging's "Free Kick" tags: dead from when the ball went quiet before
+     the tag (slower than QUIET_SPEED or not seen, at most FK_LOOKBACK earlier) until the first
+     kick after the tag, which goes to the tagged team. --no-free-kicks: off.
+  8. A stoppage nobody tagged (a foul, an offside, a substitution): dead while the players walk
+     -- tempo, the median player speed over 2 s, below SLOW_TEMPO -- and the ball is slower than
      QUIET_SPEED or not seen, for at least SLOW_SECONDS; play restarts with the next touch.
-     Chosen with starter/stoppage_check.py: in the public window 1.2 m/s held 1 s added 273 of the
-     873 dead frames the rules missed, called no live frame dead, and the whole match 41% dead.
-     Off by default until the scoreboard says otherwise.
+     --no-slow-stop: off.
+  8b. Such a stoppage starts where the tempo last stood at SLOW_BACK (1.8 m/s) or more, at most
+     SLOW_BACK_MAX earlier -- the players slow down seconds after the whistle -- but never across
+     a change of team or a restart. --slow-back 0: off.
+  9. Two dead stretches at most MERGE_GAP (5 s) apart, with the players walking between them
+     (mean tempo below MERGE_TEMPO), are one stoppage: before a free kick the ball is moved about.
+     --merge-gap S sets it, 0 turns it off.
+  11. A pass that only goes past an opponent is not his: an opponent within the touch distance
+     takes the ball only if its path breaks at him (it turns TURN_DEGREES or its speed changes
+     by SPEED_RATIO within PASS_BY_WINDOW frames) or it is slow there (below CONTROL_SPEED).
+     --no-pass-by: off.
+  13. The stoppages of rules 7 and 8 start DEAD_LEAD (15) frames earlier -- never before the last
+     restart or the last change of team. --dead-lead N sets it, 0 turns it off.
+  14. A stoppage that restarts with the next touch (throw-in, foul, offside) ends DEAD_TAIL (17)
+     frames later -- with 1.5 m play restarts as soon as the taker is within reach -- taking at
+     most half of the possession after it. Corners, goal kicks, free-kick tags and goals restart
+     at the kick and are not moved. --dead-tail N sets it, 0 turns it off.
+  15. The players vote: the team with the ball spreads across the pitch (public window: width
+     difference AUC 0.95, starter/team_shape_check.py). A possession of at most SHAPE_MAX (5 s)
+     with the other team on both sides, whose team is on average at least SHAPE_VETO (6 m)
+     narrower than the other, goes to the other team. --shape-veto M sets it, 0 turns it off.
 
-  9. --merge-gap S: two dead stretches at most S seconds apart are one stoppage -- before a free
-     kick the ball is moved about (set down, rolled, passed to the taker), and each move would
-     otherwise end the dead ball for a moment. The live frames between them become D if the
-     players walk there (mean tempo below MERGE_TEMPO; --merge-tempo 99 drops that check).
-     --merge-max-ball V: and only if the ball never goes faster than V m/s (smoothed) in the gap
-     -- a faster ball is a real restart (a corner, a free kick taken), and play went on after it.
+Also: --ball FILE takes the ball from a fused track (starter/ball_fusion.py, from your own ball
+detector) instead of the ATD's; --trace FROM TO prints the pass frame by frame (labels unchanged).
 
-  8a. --restart-cut: an untagged stoppage ends at its restart -- the ball standing still
-     (PLACED_SPEED) for RESTART_STILL seconds, then kicked (RESTART_KICK) -- and no new one starts
-     within REARM_SECONDS after it or before the players have sped up past SLOW_TEMPO again (at
-     most REARM_MAX), nor does rule 9 join across it, nor rule 8b move a start back across it.
-  8b. --slow-back V: an untagged stoppage starts when the tempo last stood at V or more (at most
-     SLOW_BACK_MAX earlier), not when it has fallen below SLOW_TEMPO -- the players slow down
-     seconds after the whistle. Checked on five stoppages timed in the video: with 1.8 the start
-     is 0.8-2.7 s off (mean 1.8 s), without it 0.6-24 s late (mean 8.5 s). The video showed stoppages
-     running 2-19 s past the restart: the players stand about after a corner or a free kick, the
-     ball unseen among them, and that read as walking.
+Not handled: where the ATD's ball follows the wrong object (review: 11553, 11803, 17354); the end
+of an untagged stoppage can still be late. Outfield players keep the team of their ATD slot.
 
-Not handled yet: the end of an untagged stoppage is often late (2-19 s in the video). Outfield players keep the team of their ATD slot.
-
-    python starter/possession_rules.py                          # a touch: nearest player within 0.5 m
-    python starter/possession_rules.py --no-keepers             # rule 0 off, for comparison
-    python starter/possession_rules.py --ownership touch        # the path-change rule
-    python evaluation/run_evaluation.py --bootstrap 1000
-    python starter/review.py --submission evaluation/results/possession_rules.csv
-
-The tracking reader and its cache are copied in from baseline_plus.py (data only, none of its
-rules), so this file needs only the repository's own games.py, baseline.py and
-load_smart_tagging.py. The first run reads the ATD once (a minute or two) and caches it in the
-gitignored data folder.
+Needs only the repository's games.py, baseline.py and load_smart_tagging.py. The first run reads
+the ATD once (a minute or two) and caches it in the gitignored data folder; any flag writes
+best_so_far_custom.csv (or a name with the flag's setting in it) instead of best_so_far.csv.
 """
 
 import argparse
@@ -124,71 +93,65 @@ KICK_SEARCH = 250             # frames after a kickoff tag searched for the kick
 TAG_KICKOFF_LAG = 85          # frames, used only if no kick is found: the tag opens ~3.5 s early
 
 # Rule 2: who has the ball.
-TOUCH_RADIUS = 0.4            # m: a player this close to the ball touches it -- everywhere in this file
-FLIGHT_SPEED = 11.0           # m/s: a ball faster than this is travelling; nobody touches it
+TOUCH_RADIUS = 1.5            # m: a player this close to the ball touches it (swept 0.4-2.0: 1.4-1.5)
 BACKDATE_MAX = 75             # frames a change of team may be moved back (3 s)
-TURN_DEGREES = 35.0           # a change of direction at least this big is a change of path...
+
+# Rule 11: a pass going by.
+TURN_DEGREES = 35.0           # a change of direction at least this big is a break in the path...
 SPEED_RATIO = 2.0             # ...and so is the speed changing by this factor either way
 MIN_PATH_SPEED = 2.0          # m/s: below this the direction is tracking noise, not a path
 PATH_SPAN = 3                 # frames before and after a frame used to measure the path
-CONTROL_SPEED = 3.0           # m/s: --ownership touch: a ball slower than this, within TOUCH_RADIUS...
-CONTROL_FRAMES = 10           # ...for this many frames in a row (0.4 s), is controlled
+PASS_BY_WINDOW = 3            # frames either side of a touch searched for the break
+CONTROL_SPEED = 3.0           # m/s: a ball slower than this at a player is at his feet
+PASS_BY = True                # --no-pass-by sets this False
 
 # Rules 4 and 5: the ball over a goal line.
 EXIT_TAG_WINDOW = (-125, 1000)  # frames around the exit in which a corner tag means a corner
 CORNER_KICK_SEARCH = 750      # frames after the corner tag searched for the kick (30 s)
 GOAL_KICK_SEARCH = 1000       # frames after the exit searched for the goal kick (40 s)
 PLACED_SPEED = 0.5            # m/s, smoothed: a ball this slow in a penalty area has been put down...
-PLACED_SECONDS = 0.5          # ...for at least this long (--placed-seconds)
+PLACED_SECONDS = 0.5          # ...for at least this long
 BOX_DEPTH, BOX_HALF_WIDTH = 16.5, 20.16  # a penalty area
-
-# Rule 3: a goalkeeper's throw or kick.
-LAUNCH_SPEED = 12.0           # m/s: a ball leaving the own penalty area faster than this is launched
-
-# Rule 7: free kicks.
-QUIET_SPEED = 1.5             # m/s, smoothed: a ball slower than this, or not seen, is not in play...
-ACTIVE_BALL_SPEED = 2.0       # m/s, smoothed: above this, the ball is active for rewind guards
-FK_LOOKBACK = 375             # ...searched back from a free-kick tag at most this far (15 s)
-
-# Rule 8: untagged stoppages (--slow-stop).
-SLOW_TEMPO = 1.2              # m/s: median player speed (2 s average) below this: the players walk...
-SLOW_SECONDS = 1.0            # ...while the ball is quiet, for at least this long
-
-# Rules 8a and 8b (--restart-cut, --slow-back).
-RESTART_CUT = False           # set by --restart-cut
-RESTART_STILL = 1.0           # s: the ball still this long (smoothed speed below PLACED_SPEED)...
-RESTART_KICK = 5.0            # ...then faster than this (m/s) within RESTART_SEARCH: a restart
-RESTART_SEARCH = 50           # frames
-REARM_SECONDS = 5.0           # no new untagged stoppage this soon after a restart, nor before the
-REARM_MAX = 30.0              # players speed up past SLOW_TEMPO again (at most this long, s)
-SLOW_BACK = None              # m/s, set by --slow-back
-SLOW_BACK_MAX = 375           # frames (15 s)
-
-# Rule 9: joining dead stretches (--merge-gap).
-MERGE_TEMPO = 1.5             # m/s: only a gap the players walk through is joined
+GOAL_KICK_RULE = True         # --no-goal-kick sets this False
 
 # Rule 6: goals.
 GOAL_LOOKBACK = 3000          # frames before an after-goal kickoff tag searched for the goal (2 min)
-SMOOTH_FRAMES = 15            # rolling-median window for the smoothed ball speed
-FALLBACK = "next touch"       # when neither a corner nor a goal kick shows up
 
-OUTPUT_NAME = "possession_rules"
+# Rule 7: free kicks.
+QUIET_SPEED = 1.5             # m/s, smoothed: a ball slower than this, or not seen, is not in play...
+FK_LOOKBACK = 375             # ...searched back from a free-kick tag at most this far (15 s)
+
+# Rules 8 and 8b: untagged stoppages.
+SLOW_TEMPO = 1.2              # m/s: median player speed (2 s average) below this: the players walk...
+SLOW_SECONDS = 1.0            # ...while the ball is quiet, for at least this long
+SLOW_BACK = 1.8               # m/s: rule 8b, the start goes back to where the tempo last stood this high
+SLOW_BACK_MAX = 375           # frames, at most (15 s)
+
+# Rule 9: joining dead stretches.
+MERGE_GAP = 5.0               # s
+MERGE_TEMPO = 1.5             # m/s: only a gap the players walk through is joined
+
+# Rules 13, 14, 15.
+DEAD_LEAD = 15                # frames (swept 5-28: 10-25 equal)
+DEAD_TAIL = 17                # frames (dead_check: our ends were 17-18 frames early)
+SHAPE_VETO = 6.0              # m (4-7 m all the same on the public window)
+SHAPE_MAX = 5.0               # s: only possessions this short are judged
+SHAPE_SMOOTH = 25             # frames the width difference is averaged over
+
+SMOOTH_FRAMES = 15            # rolling-median window for the smoothed ball speed
+TRACE = None                  # --trace FROM TO
 LABEL = {HOME: "H", AWAY: "A"}
 
-
-# -- reading the tracking (copied from baseline_plus.py: data only, none of its rules) ------------
-
+# Reading the tracking.
 MAX_PLAYER_SPEED = 12.0       # m/s; a faster jump between frames is an identity switch
 TEMPO_FRAMES = 50             # the tempo: median player speed averaged over this many frames (2 s)
-CACHE_NAME = "baseline_plus_features_v3_{}.npz"  # the same cache file baseline_plus.py wrote
+CACHE_NAME = "best_so_far_features_v4_{}.npz"
 
+
+# -- reading the tracking -------------------------------------------------------------------------
 
 def keeper_sides(meta_path):
-    """(goalkeeper slots, team defending the LEFT goal in the first half).
-
-    Goalkeeper slots are the Players whose position_type is Goalkeeper. The team attacking
-    left_to_right in the first half defends the left goal; the teams swap ends at halftime.
-    """
+    """(goalkeeper slots, team defending the LEFT goal in the first half)."""
     root = ET.parse(meta_path).getroot()
     keepers = set()
     for slot, player in enumerate(root.iter("Player")):
@@ -207,14 +170,10 @@ def keeper_sides(meta_path):
     sys.exit("{}: no attack_direction_first_half for the home team".format(meta_path))
 
 
-def read_features(raw_path, meta_path, n_frames, pitch):
-    """Per frame: ball position (m), and the distance from the ball to each team's nearest player.
-
-    home_fixed, away_fixed     teams from the players' slots, as the baseline has them
-    home_keeper, away_keeper   the same, but a goalkeeper takes the team defending his side
-    player_speed               median speed of the tracked players, m/s, from frame to frame
-    NaN where the ball, or that team, is not tracked.
-    """
+def read_features(raw_path, meta_path, n_frames, pitch, ball=None):
+    """Per frame: the ball (m); each team's nearest player to it, by ATD slot (_fixed) and with a
+    goalkeeper in the team defending his side (_keeper); the median player speed; each team's
+    width (spread across the pitch of its outfield players). ball: a fused track to use instead."""
     length, width = pitch
     halfway = length / 2.0
     teams = team_of_each_track(meta_path)
@@ -224,11 +183,11 @@ def read_features(raw_path, meta_path, n_frames, pitch):
 
     out = {name: np.full(n_frames, np.nan) for name in
            ("ball_x", "ball_y", "home_fixed", "away_fixed", "home_keeper", "away_keeper",
-            "player_speed")}
+            "player_speed", "home_width", "away_width")}
     fps = GAMES[GAME]["fps"]
     previous_frame, previous = None, {}
 
-    with open(raw_path, encoding="utf-8") as handle:
+    with open(raw_path) as handle:
         for line in handle:
             parts = line.split(FIELD_SEP)
             if len(parts) != 3:
@@ -236,7 +195,6 @@ def read_features(raw_path, meta_path, n_frames, pitch):
             frame = int(parts[0]) - 1  # frame_id counts from 1, submissions from 0
             if not 0 <= frame < n_frames:
                 continue
-            # The players' speed is read on every frame, ball or no ball.
             positions, speeds = {}, []
             consecutive = previous_frame is not None and frame == previous_frame + 1
             for slot, group in enumerate(parts[1].split(GROUP_SEP)):
@@ -251,22 +209,27 @@ def read_features(raw_path, meta_path, n_frames, pitch):
                         speeds.append(step)
             if speeds:
                 out["player_speed"][frame] = float(np.median(speeds))
+            for team, name in ((HOME, "home_width"), (AWAY, "away_width")):
+                ys = [p[1] for s_, p in positions.items() if teams[s_] == team and s_ not in keepers]
+                if len(ys) >= 5:
+                    out[name][frame] = float(np.std(ys))
             previous_frame, previous = frame, positions
-            if parts[2][0] == MISSING:
-                continue
-            ball = parts[2].split(",")
-            bx, by = float(ball[0]) * length, float(ball[1]) * width
+            if ball is not None:
+                bx, by = ball[0][frame] * length, ball[1][frame] * width
+                if not (np.isfinite(bx) and np.isfinite(by)):
+                    continue
+            else:
+                if parts[2][0] == MISSING:
+                    continue
+                atd = parts[2].split(",")
+                bx, by = float(atd[0]) * length, float(atd[1]) * width
             out["ball_x"][frame], out["ball_y"][frame] = bx, by
 
             left_team = left_first_half if frame < second_half_from else (
                 AWAY if left_first_half == HOME else HOME)
             fixed = [None, None]
             keeper = [None, None]
-            for slot, group in enumerate(parts[1].split(GROUP_SEP)):
-                if group[0] == MISSING:
-                    continue
-                values = group.split(",")
-                px, py = float(values[0]) * length, float(values[1]) * width
+            for slot, (px, py) in positions.items():
                 d = (px - bx) ** 2 + (py - by) ** 2
                 team = teams[slot]
                 if fixed[team] is None or d < fixed[team]:
@@ -283,20 +246,35 @@ def read_features(raw_path, meta_path, n_frames, pitch):
     return out
 
 
-def load_features(data_dir):
-    """read_features(), cached next to the data so the slow pass runs once."""
+def load_features(data_dir, ball_path=None):
+    """read_features(), cached next to the data so the slow pass runs once (a --ball track has
+    its own cache)."""
     meta_path, raw_path = require(["atd_meta", "atd_raw"], GAME, data_dir)
-    cache = os.path.join(os.path.dirname(raw_path), CACHE_NAME.format(GAME))
-    if os.path.isfile(cache) and os.path.getmtime(cache) >= os.path.getmtime(raw_path):
+    name = CACHE_NAME.format(GAME)
+    newest = os.path.getmtime(raw_path)
+    ball = None
+    if ball_path:
+        name = name.replace(".npz", "_ball-{}.npz".format(
+            os.path.splitext(os.path.basename(ball_path))[0]))
+        newest = max(newest, os.path.getmtime(ball_path))
+    cache = os.path.join(os.path.dirname(raw_path), name)
+    if os.path.isfile(cache) and os.path.getmtime(cache) >= newest:
         with np.load(cache) as stored:
             return {key: stored[key] for key in stored.files}
+    n_frames = source_frames("tactical", GAME)
+    if ball_path:
+        table = pd.read_csv(ball_path)
+        ball = (np.full(n_frames, np.nan), np.full(n_frames, np.nan))
+        frames = table["frame"].to_numpy()
+        ok = (frames >= 0) & (frames < n_frames)
+        ball[0][frames[ok]] = table["x"].to_numpy()[ok]
+        ball[1][frames[ok]] = table["y"].to_numpy()[ok]
+        print("ball from {}: seen on {:.0f}% of frames".format(
+            os.path.basename(ball_path), 100.0 * np.isfinite(ball[0]).mean()))
     print("reading {} (once; cached afterwards) ...".format(os.path.basename(raw_path)))
-    features = read_features(raw_path, meta_path, source_frames("tactical", GAME),
-                             GAMES[GAME]["pitch"])
+    features = read_features(raw_path, meta_path, n_frames, GAMES[GAME]["pitch"], ball)
     np.savez_compressed(cache, **features)
     return features
-
-
 
 
 def tempo(features):
@@ -313,7 +291,7 @@ def tempo(features):
         return np.where(n >= half, (total[high] - total[low]) / n, np.nan)
 
 
-# -- the rules ------------------------------------------------------------------------------------
+# -- helpers --------------------------------------------------------------------------------------
 
 def ball_kinematics(x, y, fps):
     """(speed, smoothed speed) in m/s, NaN where the ball is not seen on both ends."""
@@ -326,10 +304,9 @@ def ball_kinematics(x, y, fps):
 
 
 def path_changes(x, y, fps):
-    """True where the ball's path turns or changes speed (rule 2), from PATH_SPAN frames each side."""
+    """True where the ball's path turns or changes speed (rule 11), from PATH_SPAN frames each side."""
     k = PATH_SPAN
     n = len(x)
-    change = np.zeros(n, dtype=bool)
     vx_in = np.full(n, np.nan); vy_in = np.full(n, np.nan)
     vx_out = np.full(n, np.nan); vy_out = np.full(n, np.nan)
     vx_in[k:] = x[k:] - x[:-k]; vy_in[k:] = y[k:] - y[:-k]
@@ -342,8 +319,7 @@ def path_changes(x, y, fps):
             np.minimum(s_in, s_out) >= MIN_PATH_SPEED)
         ratio = np.maximum(s_in, s_out) / np.minimum(s_in, s_out)
         speed_change = (ratio >= SPEED_RATIO) & (np.maximum(s_in, s_out) >= KICK_SPEED)
-    change = np.nan_to_num(turn, nan=0).astype(bool) | np.nan_to_num(speed_change, nan=0).astype(bool)
-    return change
+    return np.nan_to_num(turn, nan=0).astype(bool) | np.nan_to_num(speed_change, nan=0).astype(bool)
 
 
 def runs_of(mask):
@@ -358,11 +334,11 @@ def first_true(mask, start, length):
 
 def smart_tagging(data_dir):
     """(kickoff tag frames per half, [(corner tag frame, team)], [after-goal kickoff tag frames],
-    [(free-kick tag frame, team)], [(goal-kick tag frame, team)], [(throw-in tag frame, team)])."""
+    [(free-kick tag frame, team)])."""
     meta_path = require(["atd_meta"], GAME, data_dir)[0]
     home, away = (name.strip().lower() for name in team_names(meta_path))
     teams = {home: HOME, away: AWAY}
-    kickoffs, corners, goals, free_kicks, goal_kicks, throw_ins = {}, [], [], [], [], []
+    kickoffs, corners, goals, free_kicks = {}, [], [], []
     for event in load_smart_tagging.load(GAME, data_dir):
         kind = (event["tags"].get("Type") or "").strip().lower()
         if kind == "kick off (start)":
@@ -370,25 +346,17 @@ def smart_tagging(data_dir):
             kickoffs[half] = event["start_frame"]
         elif kind == "kick off (after goal)":
             goals.append(event["start_frame"])
-        elif kind in ("corner kick", "free kick", "goal kick", "goal-kick", "throw in", "throw-in"):
-            team = teams.get((event["tags"].get("Team") or "").strip().lower(), NOBODY)
-            if kind == "corner kick":
-                corners.append((event["start_frame"], team))
-            elif kind == "free kick":
-                free_kicks.append((event["start_frame"], team))
-            elif kind in ("goal kick", "goal-kick"):
-                goal_kicks.append((event["start_frame"], team))
-            else:
-                throw_ins.append((event["start_frame"], team))
-    return (kickoffs, sorted(corners), sorted(goals), sorted(free_kicks),
-            sorted(goal_kicks), sorted(throw_ins))
+        elif kind in ("corner kick", "free kick"):
+            (corners if kind == "corner kick" else free_kicks).append(
+                (event["start_frame"],
+                 teams.get((event["tags"].get("Team") or "").strip().lower(), NOBODY)))
+    return kickoffs, sorted(corners), sorted(goals), sorted(free_kicks)
 
 
-def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="nearest",
-               touch_radius=TOUCH_RADIUS, placed_seconds=PLACED_SECONDS, launch_rule=True,
-               goals=(), flight=True, backdate=True, free_kicks=(), slow_stop=False,
-               merge_gap=0.0, merge_tempo=MERGE_TEMPO, merge_max_ball=None,
-               goal_kicks=(), throw_ins=()):
+# -- the rules ------------------------------------------------------------------------------------
+
+def label_half(first, last, f, kick_tag, corners, left_team, report, touch_radius=TOUCH_RADIUS,
+               goals=(), backdate=True, free_kicks=(), slow_stop=True, merge_gap=MERGE_GAP):
     """Labels for one half, video frames first..last inclusive."""
     length, width = GAMES[GAME]["pitch"]
     fps = GAMES[GAME]["fps"]
@@ -410,24 +378,19 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
     kick = max(kick if kick is not None else first, first)
     report["kickoff"] = kick
 
-    # Rule 2: on which frames does the nearest player's team get the ball?
+    # Rule 2 (FLAG): a player within touch_radius touches the ball.
     with np.errstate(invalid="ignore"):
-        within = seen & (nearest <= touch_radius)
-    if ownership == "touch":
+        gets_it = seen & (nearest <= touch_radius)
+
+    # Rule 11: did the ball's path break at the player, or is it slow at his feet?
+    played = np.ones(len(x), dtype=bool)
+    if PASS_BY:
+        broke = f["changes"].copy()
+        for k in range(1, PASS_BY_WINDOW + 1):
+            broke[k:] |= f["changes"][:-k]
+            broke[:-k] |= f["changes"][k:]
         with np.errstate(invalid="ignore"):
-            touch = f["changes"] & within
-            close = within & (speed < CONTROL_SPEED)
-        control = np.zeros(len(x), dtype=bool)
-        starts, ends = runs_of(close)
-        for start, end in zip(starts, ends):
-            if end - start >= CONTROL_FRAMES:
-                control[start:end] = True
-        gets_it = touch | control
-    else:
-        gets_it = within
-    if flight:
-        with np.errstate(invalid="ignore"):
-            gets_it = gets_it & ~(speed > FLIGHT_SPEED)
+            played = broke | (speed < CONTROL_SPEED)
 
     # Rules 4 and 5: exits over a goal line or a touchline, and their restarts.
     with np.errstate(invalid="ignore"):
@@ -436,7 +399,7 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
         in_box = seen & (np.minimum(x, length - x) <= BOX_DEPTH) & (
             np.abs(y - width / 2.0) <= BOX_HALF_WIDTH)
         placed_ball = in_box & (smooth < PLACED_SPEED)
-    placed_frames = max(1, int(round(placed_seconds * fps)))
+    placed_frames = max(1, int(round(PLACED_SECONDS * fps)))
     restarts = {}  # exit frame -> (restart frame, team, kind)
     starts, ends = runs_of(over[first:last + 1])
     for start, end in zip(starts + first, ends + first):
@@ -452,9 +415,8 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
             hit = first_true(seen & (speed > KICK_SPEED), max(tag, end), CORNER_KICK_SEARCH)
             if hit is not None:
                 restart = (hit, team if team != NOBODY else None, "corner")
-        if restart is None:
-            placed_runs = runs_of(placed_ball[end:end + GOAL_KICK_SEARCH])
-            for p_start, p_end in zip(*placed_runs):
+        if restart is None and GOAL_KICK_RULE:  # FLAG(rule 5)
+            for p_start, p_end in zip(*runs_of(placed_ball[end:end + GOAL_KICK_SEARCH])):
                 if p_end - p_start >= placed_frames:
                     hit = first_true(seen & (speed > KICK_SPEED), end + p_end - SMOOTH_FRAMES // 2,
                                      GOAL_KICK_SEARCH)
@@ -463,7 +425,7 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
                     break
         if restart is None:
             hit = first_true(gets_it, end, len(x))
-            restart = (hit if hit is not None else last + 1, None, FALLBACK)
+            restart = (hit if hit is not None else last + 1, None, "next touch")
         restarts[start] = restart
         report[restart[2]] = report.get(restart[2], 0) + 1
     goal_line_exits = sorted(restarts)
@@ -491,10 +453,11 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
                 del report[old]
         restarts[key] = (kick_g, kicker, "goal")
         report["goal"] = report.get("goal", 0) + 1
+
     # Rule 7: free kicks -- dead from the ball going quiet before the tag until the kick after it.
     with np.errstate(invalid="ignore"):
         quiet = ~seen | (smooth < QUIET_SPEED)
-    stoppages = {}  # start frame -> (kick frame, team); may begin inside another dead stretch
+    stoppages = {}  # start frame -> (kick frame, team)
     for tag, tag_team in free_kicks:
         if not max(first, kick) <= tag <= last:
             continue
@@ -503,129 +466,129 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
             continue
         start = tag
         while start > max(first, kick, tag - FK_LOOKBACK) and quiet[start - 1]:
-            if seen[start - 1] and (smooth[start - 1] >= ACTIVE_BALL_SPEED
-                                    or speed[start - 1] >= KICK_SPEED):
-                break
             start -= 1
         stoppages[start] = (kick_f, tag_team if tag_team != NOBODY else None)
         report["free kick"] = report.get("free kick", 0) + 1
 
-    # Tagged goal kicks and throw-ins: dead from the preceding quiet-ball stretch to the kick.
-    for tags, name in ((goal_kicks, "goal kick tag"), (throw_ins, "throw-in tag")):
-        for tag, tag_team in tags:
-            if not max(first, kick) <= tag <= last:
-                continue
-            kick_t = first_true(seen & (speed > KICK_SPEED), tag, CORNER_KICK_SEARCH)
-            if kick_t is None:
-                continue
-            start = tag
-            floor = max(first, kick, tag - FK_LOOKBACK)
-            while start > floor and quiet[start - 1]:
-                if seen[start - 1] and (smooth[start - 1] >= ACTIVE_BALL_SPEED
-                                        or speed[start - 1] >= KICK_SPEED):
-                    break
-                start -= 1
-            stoppages[start] = (kick_t, tag_team if tag_team != NOBODY else None)
-            report[name] = report.get(name, 0) + 1
-
-    # Rule 8: untagged stoppages -- the players walking while the ball is quiet.
-    slow_stops = {}  # start frame -> first frame after the stretch
-    restart_kicks = np.zeros(len(x), dtype=bool)  # rule 8a
+    # Rules 8 and 8b: untagged stoppages -- the players walking while the ball is quiet.
+    slow_stops = {}  # frame the tempo fell below SLOW_TEMPO -> (first frame after, rule-8b start)
     if slow_stop:
         with np.errstate(invalid="ignore"):
             walking = (f["tempo"] < SLOW_TEMPO) & quiet
-            if RESTART_CUT:
-                still = seen & (smooth < PLACED_SPEED)
-                rearm = np.zeros(len(x), dtype=bool)
-                for s_, e_ in zip(*runs_of(still[first:last + 1])):
-                    if e_ - s_ >= int(round(RESTART_STILL * fps)):
-                        hit = first_true(seen & (speed > RESTART_KICK),
-                                         first + e_ - SMOOTH_FRAMES // 2, RESTART_SEARCH)
-                        if hit is not None:
-                            restart_kicks[hit] = True
-                            j = min(len(x), hit + int(round(REARM_SECONDS * fps)))
-                            stop = min(len(x), hit + int(round(REARM_MAX * fps)))
-                            while j < stop and not f["tempo"][j] >= SLOW_TEMPO:
-                                j += 1
-                            rearm[hit:j] = True
-                walking = walking & ~rearm  # a stoppage ends at its restart kick
-                report["restart kicks"] = int(restart_kicks[first:last + 1].sum())
         starts, ends = runs_of(walking[first:last + 1])
         for start, end in zip(starts + first, ends + first):
             if start >= kick and end - start >= int(round(SLOW_SECONDS * fps)):
-                if SLOW_BACK is not None:  # rule 8b: back to where the tempo last stood at SLOW_BACK
+                origin = start
+                if SLOW_BACK is not None:
                     floor_ = max(first, kick, start - SLOW_BACK_MAX)
-                    kicks_before = np.flatnonzero(restart_kicks[floor_:start])
-                    if len(kicks_before):  # never back across a restart
-                        floor_ = floor_ + int(kicks_before[-1]) + 1
                     while start > floor_ and not f["tempo"][start - 1] >= SLOW_BACK:
-                        if seen[start - 1] and (smooth[start - 1] >= ACTIVE_BALL_SPEED
-                                                or speed[start - 1] >= KICK_SPEED):
-                            break
                         start -= 1
-                slow_stops[start] = max(end, slow_stops.get(start, end))
+                slow_stops[origin] = (end, start)
         report["slow stop"] = len(slow_stops)
 
-    # Rule 3: launches -- the ball's speed rising past LAUNCH_SPEED inside a penalty area.
-    with np.errstate(invalid="ignore"):
-        fast = speed >= LAUNCH_SPEED
-    launch = np.zeros(len(x), dtype=bool)
-    launch[1:] = fast[1:] & ~fast[:-1] & in_box[1:]
-    right_team = AWAY if left_team == HOME else HOME
+    # Restarts at a kick, seen to the frame -- rule 14 leaves them alone.
+    kick_restarts = {kick}
+    kick_restarts.update(r[0] for r in restarts.values() if r[2] in ("corner", "goal kick", "goal"))
+    kick_restarts.update(v[0] for v in stoppages.values())
+
+    trace_rows = []
+
+    def trace(t, why):  # --trace
+        if TRACE and TRACE[0] <= t <= TRACE[1]:
+            side = {HOME: "H", AWAY: "A"}
+            cell = lambda v: "{:>6.2f}".format(v) if np.isfinite(v) else "     -"  # noqa: E731
+            trace_rows.append((t, side.get(team, "-"), "y" if seen[t] else "-",
+                               "{:>5.1f}".format(speed[t]) if np.isfinite(speed[t]) else "    -",
+                               side.get(near_team[t], "-") if np.isfinite(nearest[t]) else "-",
+                               cell(home[t]), cell(away[t]), "y" if gets_it[t] else "-",
+                               "y" if played[t] else "-", why))
 
     # The pass over the half.
     team = near_team[kick] if kick <= last and np.isfinite(nearest[kick]) else NOBODY
-    dead_until, restart_team, flight_from = kick, team, None
-    launches, floor, last_touch = 0, kick, {HOME: -1, AWAY: -1}
+    dead_until, restart_team = kick, team
+    floor, last_touch = kick, {HOME: -1, AWAY: -1}
+    last_change = -1  # the last frame the ball went from one team to the other
     for t in range(first, last + 1):
         if t in restarts and t >= dead_until:
             dead_until, restart_team, _ = restarts[t]
-            team, flight_from = NOBODY, None
+            team = NOBODY
         if t in stoppages and stoppages[t][0] > dead_until:
+            if DEAD_LEAD and t >= dead_until:  # rule 13
+                lead = max(t - DEAD_LEAD, floor, last_change + 1)
+                labels[lead - first:t - first] = "D"
             dead_until, restart_team = stoppages[t]
-            team, flight_from = NOBODY, None
+            team = NOBODY
             labels[t - first] = "D"
-        if t in slow_stops and (t >= dead_until or (SLOW_BACK is not None
-                                                    and slow_stops[t] > dead_until)):
-            dead_until, restart_team = slow_stops[t], None  # restarts with the next touch
-            team, flight_from = NOBODY, None
+        if t in slow_stops and (t >= dead_until or slow_stops[t][0] > dead_until):
+            end_s, back = slow_stops[t]
+            if t >= dead_until:
+                # Rule 8b looking back: from the rule-8b start, unless the ball changed team in
+                # between (play was live there), never before the last restart.
+                start = max(back if last_change < back else t, floor)
+                if DEAD_LEAD:  # rule 13
+                    start = max(start - DEAD_LEAD, floor, last_change + 1)
+                labels[start - first:t - first] = "D"
+            dead_until, restart_team = end_s, None  # restarts with the next touch
+            team = NOBODY
         if t < dead_until:
+            trace(t, "dead until {}".format(dead_until))
             continue
         if t == dead_until:
             floor = t  # no change of team is moved back past a restart
             if restart_team not in (None, NOBODY):
                 team = restart_team
-        if launch_rule and launch[t] and team != NOBODY and flight_from is None:
-            if team == (left_team if x[t] < length / 2.0 else right_team):  # its own box
-                flight_from = t
-                launches += 1
-        if flight_from is not None:
-            # The keeper is still at the ball as it leaves: the first touch is the first frame,
-            # after the ball has left him (nobody within TOUCH_RADIUS), that someone touches it.
-            left_keeper = np.any(~within[flight_from:t + 1])
-            if not (within[t] and left_keeper):
-                labels[t - first] = LABEL[team]
-                continue
-            flight_from, floor = None, t  # the launch stays with the keeper's team until here
-        if gets_it[t]:
+        why = ""
+        if gets_it[t] and not (team not in (NOBODY, near_team[t]) and not played[t]):
             toucher = near_team[t]
-            if (team not in (NOBODY, toucher)
-                    and np.isfinite(speed[t])
-                    and speed[t] > FLIGHT_SPEED
-                    and not f["changes"][t]):
-                labels[t - first] = LABEL[team]
-                continue
-            if backdate and team not in (NOBODY, toucher):
-                start = max(last_touch[team] + 1, t - BACKDATE_MAX, floor)
-                span = labels[start - first:t - first]
-                span[span == LABEL[team]] = LABEL[toucher]
+            if team not in (NOBODY, toucher):
+                last_change = t
+                why = "CHANGE to {}".format(LABEL[toucher])
+                if backdate:
+                    start = max(last_touch[team] + 1, t - BACKDATE_MAX, floor)
+                    span = labels[start - first:t - first]
+                    span[span == LABEL[team]] = LABEL[toucher]
+                    if start < t:
+                        why += ", backdated to {}".format(start)
             team = toucher
             last_touch[team] = t
+        elif gets_it[t]:
+            why = "opponent touch refused (the ball went by: rule 11)"
         if team != NOBODY:
             labels[t - first] = LABEL[team]
-    report["launches"] = launches
+        trace(t, why)
 
-    # Rule 9: join dead stretches at most merge_gap seconds apart.
+    # Rule 15: a short possession between two of the other team's, whose team stays clearly
+    # narrower than the other, is not one.
+    if SHAPE_VETO > 0:
+        vetoed = 0
+        wd = f["width_diff"][first:last + 1]
+        bounds = np.concatenate(([0], np.flatnonzero(labels[1:] != labels[:-1]) + 1, [n]))
+        for i in range(1, len(bounds) - 2):
+            s0, s1 = bounds[i], bounds[i + 1]
+            here, before, after = labels[s0], labels[s0 - 1], labels[s1]
+            if not (here in ("H", "A") and before == after and before in ("H", "A")
+                    and before != here and s1 - s0 <= SHAPE_MAX * fps):
+                continue
+            d = wd[s0:s1]
+            if not np.isfinite(d).any():
+                continue
+            mine = np.nanmean(d) if here == "H" else -np.nanmean(d)  # its width minus the other's
+            if mine <= -SHAPE_VETO:
+                labels[s0:s1] = before
+                vetoed += 1
+        report["shape vetoes"] = vetoed
+
+    # Rule 14: a stoppage that restarts with the next touch ends DEAD_TAIL frames later.
+    if DEAD_TAIL > 0:
+        before = labels.copy()  # decide on the labels as they were, not as they are being changed
+        bounds = np.concatenate(([0], np.flatnonzero(before[1:] != before[:-1]) + 1, [n]))
+        for i in range(len(bounds) - 2):
+            s0, s1, s2 = bounds[i], bounds[i + 1], bounds[i + 2]
+            if before[s0] == "D" and s0 >= kick - first and before[s1] in ("H", "A") and \
+                    not any(s0 < r - first <= s1 for r in kick_restarts):
+                labels[s1:s1 + min(DEAD_TAIL, (s2 - s1) // 2)] = "D"  # at most half the possession
+
+    # Rule 9: join dead stretches at most merge_gap seconds apart, the players walking between.
     if merge_gap > 0:
         gap_frames, merged = int(round(merge_gap * fps)), 0
         starts, ends = runs_of(labels != "D")
@@ -635,15 +598,16 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
             with np.errstate(invalid="ignore"), warnings.catch_warnings():
                 warnings.simplefilter("ignore", RuntimeWarning)
                 walk = np.nanmean(f["tempo"][first + start:first + end])
-                fastest = np.nanmax(smooth[first + start:first + end])
-            if restart_kicks[first + start:first + end].any():
-                continue  # rule 8a: play restarted in the gap
-            if merge_max_ball is not None and fastest > merge_max_ball:
-                continue  # the ball was kicked in the gap: play restarted
-            if np.isnan(walk) or walk < merge_tempo:
+            if np.isnan(walk) or walk < MERGE_TEMPO:
                 labels[start:end] = "D"
                 merged += 1
         report["merged gaps"] = merged
+
+    if trace_rows:
+        print("  frame  final  holds  seen  speed  near  H dist  A dist  touch  played  what happened")
+        for t, holds, sn, sp, nr, hd, ad, tc, pl, why in trace_rows:
+            print("  {:>6}    {}      {}     {}   {}    {}   {}  {}    {}      {}   {}".format(
+                t, labels[t - first], holds, sn, sp, nr, hd, ad, tc, pl, why))
     return labels
 
 
@@ -652,56 +616,38 @@ def possessions(labels):
     return int(np.isin(labels[starts], ("H", "A")).sum())
 
 
-def suppress_flickers(labels, max_frames=8):
-    """Absorb brief opponent takeovers flanked by the other team on both sides."""
-    for team_char, opp_char in (("H", "A"), ("A", "H")):
-        runs_edges = np.diff(np.concatenate(([0], (labels == team_char).astype(np.int8), [0])))
-        starts = np.flatnonzero(runs_edges == 1)
-        ends = np.flatnonzero(runs_edges == -1)
-        for start, end in zip(starts, ends):
-            if end - start >= max_frames:
-                continue
-            if start > 0 and end < len(labels) and labels[start - 1] == opp_char and labels[end] == opp_char:
-                labels[start:end] = opp_char
-    return labels
-
-
-def prepare(data_dir, keepers=True):
+def prepare(data_dir, keepers=True, ball_path=None):
     """Everything the rules read, once: (tracking arrays, kickoff tags, corner tags, goal tags,
-    team defending the left goal in the first half). Shared by main() and sweep_radius.py."""
+    team defending the left goal in the first half, free-kick tags)."""
     fps = GAMES[GAME]["fps"]
-    features = load_features(data_dir)
-    # Rule 0: "_keeper" distances put each goalkeeper slot in the team defending its side.
-    suffix = "_keeper" if keepers else "_fixed"
+    features = load_features(data_dir, ball_path)
+    suffix = "_keeper" if keepers else "_fixed"  # rule 0
     f = {"ball_x": features["ball_x"], "ball_y": features["ball_y"],
          "home": np.nan_to_num(features["home" + suffix], nan=np.inf),
          "away": np.nan_to_num(features["away" + suffix], nan=np.inf)}
     f["speed"], f["smooth"] = ball_kinematics(f["ball_x"], f["ball_y"], fps)
-    f["changes"] = path_changes(f["ball_x"], f["ball_y"], fps)
-    f["tempo"] = tempo(features)  # rule 8
-    kickoffs, corners, goals, free_kicks, goal_kicks, throw_ins = smart_tagging(data_dir)
+    f["changes"] = path_changes(f["ball_x"], f["ball_y"], fps)  # rule 11
+    f["tempo"] = tempo(features)  # rules 8, 9
+    f["width_diff"] = pd.Series(features["home_width"] - features["away_width"]).rolling(  # rule 15
+        SHAPE_SMOOTH, center=True, min_periods=SHAPE_SMOOTH // 2).mean().to_numpy()
+    kickoffs, corners, goals, free_kicks = smart_tagging(data_dir)
     meta_path = require(["atd_meta"], GAME, data_dir)[0]
-    _, left_first_half = keeper_sides(meta_path)  # only which side each team defends
-    return f, kickoffs, corners, goals, left_first_half, free_kicks, goal_kicks, throw_ins
+    _, left_first_half = keeper_sides(meta_path)
+    return f, kickoffs, corners, goals, left_first_half, free_kicks
 
 
-def label_match(prepared, ownership="nearest", touch_radius=TOUCH_RADIUS,
-                placed_seconds=PLACED_SECONDS, launch_rule=True, flight=True, backdate=True,
-                free_kick_rule=True, slow_stop=False, merge_gap=0.0, merge_tempo=MERGE_TEMPO,
-                merge_max_ball=None, reports=None):
+def label_match(prepared, touch_radius=TOUCH_RADIUS, backdate=True, free_kick_rule=True,
+                slow_stop=True, merge_gap=MERGE_GAP, reports=None):
     """The full-length label array for one set of settings. reports, if a list, gets one per half."""
-    f, kickoffs, corners, goals, left_first_half, free_kicks, goal_kicks, throw_ins = prepared
+    f, kickoffs, corners, goals, left_first_half, free_kicks = prepared
     labels = np.full(len(f["ball_x"]), "X", dtype="<U1")
     for half, first, last in half_video_blocks(GAME):
         left_team = left_first_half if half == 1 else (AWAY if left_first_half == HOME else HOME)
         report = {}
         labels[first:last + 1] = label_half(first, last, f, kickoffs.get(half), corners,
-                                            left_team, report, ownership, touch_radius,
-                                            placed_seconds, launch_rule, goals, flight, backdate,
+                                            left_team, report, touch_radius, goals, backdate,
                                             free_kicks if free_kick_rule else (), slow_stop,
-                                            merge_gap, merge_tempo, merge_max_ball,
-                                            goal_kicks, throw_ins)
-        labels[first:last + 1] = suppress_flickers(labels[first:last + 1])
+                                            merge_gap)
         if reports is not None:
             reports.append((half, half in kickoffs, report))
     return labels
@@ -709,73 +655,70 @@ def label_match(prepared, ownership="nearest", touch_radius=TOUCH_RADIUS,
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--ownership", choices=("nearest", "touch"), default="nearest",
-                        help="rule 2: the nearest player, or a change of the ball's path at a player")
     parser.add_argument("--nearest-radius", type=float, default=TOUCH_RADIUS, metavar="M",
-                        help="the touch distance, everywhere (default 0.4 m)")
-    parser.add_argument("--no-keepers", action="store_true",
-                        help="turn off rule 0: goalkeepers keep the team of their ATD slot")
-    parser.add_argument("--placed-seconds", type=float, default=PLACED_SECONDS, metavar="S",
-                        help="rule 5: how long the ball must stand still on the pitch before a goal kick")
-    parser.add_argument("--no-launch", action="store_true",
-                        help="turn off rule 3, the goalkeeper's throw or kick")
-    parser.add_argument("--no-flight", action="store_true",
-                        help="rule 2: let a ball faster than FLIGHT_SPEED be touched")
-    parser.add_argument("--no-backdate", action="store_true",
-                        help="rule 2: a change of team starts at the touch, not when the ball left")
-    parser.add_argument("--no-slow-stop", action="store_true",
-                        help="turn off rule 8 (and so 8a, 8b): players walking + ball quiet")
-    parser.add_argument("--slow-tempo", type=float, default=SLOW_TEMPO, metavar="M/S",
-                        help="rule 8: the tempo line (default 1.2)")
-    parser.add_argument("--slow-seconds", type=float, default=SLOW_SECONDS, metavar="S",
-                        help="rule 8: how long (default 1.0)")
-    parser.add_argument("--merge-gap", type=float, default=5.0, metavar="S",
-                        help="rule 9: join dead stretches at most S seconds apart (default 5; 0 = off)")
-    parser.add_argument("--merge-tempo", type=float, default=MERGE_TEMPO, metavar="M/S",
-                        help="rule 9: only if the players walk the gap (default 1.5; 99 = always)")
-    parser.add_argument("--merge-max-ball", type=float, default=None, metavar="M/S",
-                        help="rule 9: not across a gap in which the ball goes faster than this")
-    parser.add_argument("--restart-cut", action="store_true",
-                        help="rule 8a: an untagged stoppage ends at a placed-ball kick")
-    parser.add_argument("--restart-still", type=float, default=RESTART_STILL, metavar="S",
-                        help="rule 8a: how long the ball stands still before the kick (default 1.0)")
-    parser.add_argument("--restart-kick", type=float, default=RESTART_KICK, metavar="M/S",
-                        help="rule 8a: how fast the kick (default 5)")
-    parser.add_argument("--slow-back", type=float, default=1.8, metavar="M/S",
-                        help="rule 8b: start an untagged stoppage where the tempo was last this high "
-                             "(default 1.8; 0 = off)")
-    parser.add_argument("--no-free-kicks", action="store_true",
-                        help="turn off rule 7, the Smart Tagging free kicks")
+                        help="rule 2: the touch distance (default 1.5 m)")
+    parser.add_argument("--no-keepers", action="store_true", help="turn off rule 0")
+    parser.add_argument("--no-backdate", action="store_true", help="rule 2: no backdating")
+    parser.add_argument("--no-goal-kick", action="store_true",
+                        help="rule 5 off: a ball over the goal line with no corner restarts with the next touch")
+    parser.add_argument("--no-free-kicks", action="store_true", help="turn off rule 7")
+    parser.add_argument("--no-slow-stop", action="store_true", help="turn off rules 8 and 8b")
+    parser.add_argument("--slow-back", type=float, default=SLOW_BACK, metavar="M/S",
+                        help="rule 8b (default 1.8; 0 = off)")
+    parser.add_argument("--merge-gap", type=float, default=MERGE_GAP, metavar="S",
+                        help="rule 9 (default 5; 0 = off)")
+    parser.add_argument("--no-pass-by", action="store_true", help="turn off rule 11")
+    parser.add_argument("--dead-lead", type=int, default=DEAD_LEAD, metavar="N",
+                        help="rule 13 (default 15; 0 = off)")
+    parser.add_argument("--dead-tail", type=int, default=DEAD_TAIL, metavar="N",
+                        help="rule 14 (default 17; 0 = off)")
+    parser.add_argument("--shape-veto", type=float, default=SHAPE_VETO, metavar="M",
+                        help="rule 15 (default 6; 0 = off)")
+    parser.add_argument("--shape-max", type=float, default=SHAPE_MAX, metavar="S",
+                        help="rule 15: only possessions up to S seconds are judged (default 5)")
+    parser.add_argument("--ball", default=None, metavar="FILE",
+                        help="a fused ball track from ball_fusion.py instead of the ATD's ball")
+    parser.add_argument("--trace", type=int, nargs=2, default=None, metavar=("FROM", "TO"),
+                        help="print the pass frame by frame over FROM..TO (labels unchanged)")
     parser.add_argument("--data-dir", default=None, help="data bundle, if not ./data or MTAH_DATA_DIR")
     parser.add_argument("--out", default=RESULTS_DIR, help="where to write")
     args = parser.parse_args()
-    if args.slow_back is not None and args.slow_back <= 0:
-        args.slow_back = None
-    globals().update(SLOW_TEMPO=args.slow_tempo, SLOW_SECONDS=args.slow_seconds,  # rule 8 reads these
-                     RESTART_CUT=args.restart_cut, RESTART_STILL=args.restart_still,
-                     RESTART_KICK=args.restart_kick, SLOW_BACK=args.slow_back)
+    globals().update(SLOW_BACK=args.slow_back if args.slow_back > 0 else None,
+                     GOAL_KICK_RULE=not args.no_goal_kick, PASS_BY=not args.no_pass_by,
+                     DEAD_LEAD=args.dead_lead, DEAD_TAIL=args.dead_tail,
+                     SHAPE_VETO=args.shape_veto, SHAPE_MAX=args.shape_max, TRACE=args.trace)
 
     reports = []
-    labels = label_match(prepare(args.data_dir, not args.no_keepers), args.ownership,
-                         args.nearest_radius, args.placed_seconds, not args.no_launch,
-                         not args.no_flight, not args.no_backdate, not args.no_free_kicks,
-                         not args.no_slow_stop, args.merge_gap, args.merge_tempo, args.merge_max_ball,
-                         reports=reports)
+    labels = label_match(prepare(args.data_dir, not args.no_keepers, args.ball), args.nearest_radius,
+                         not args.no_backdate, not args.no_free_kicks, not args.no_slow_stop,
+                         args.merge_gap, reports=reports)
     blocks = {half: (first, last) for half, first, last in half_video_blocks(GAME)}
     for half, tagged, report in reports:
         part = labels[blocks[half][0]:blocks[half][1] + 1]
         kickoff = report.pop("kickoff")
-        launches = report.pop("launches", 0)
-        print("half {}: kickoff at {}{}   restarts: {}   keeper launches {}   "
-              "possessions {}   dead {:.0f}%".format(
-                  half, kickoff, "" if tagged else " (no tag: half start)",
-                  ", ".join("{} {}".format(v, k) for k, v in report.items()) or "none",
-                  launches, possessions(part), 100.0 * np.mean(part == "D")))
+        print("half {}: kickoff at {}{}   restarts: {}   possessions {}   dead {:.0f}%".format(
+            half, kickoff, "" if tagged else " (no tag: half start)",
+            ", ".join("{} {}".format(v, k) for k, v in report.items()) or "none",
+            possessions(part), 100.0 * np.mean(part == "D")))
 
-    name = "best_so_far" if len(sys.argv) == 1 else "best_so_far_custom"
+    # the default run is best_so_far.csv; the settings swept most get their own names
+    named = {"--nearest-radius": "_t{:g}".format(args.nearest_radius),
+             "--merge-gap": "_m{:g}".format(args.merge_gap),
+             "--slow-back": "_sb{:g}".format(args.slow_back),
+             "--dead-lead": "_lead{}".format(args.dead_lead),
+             "--dead-tail": "_tail{}".format(args.dead_tail),
+             "--shape-veto": "_sv{:g}".format(args.shape_veto),
+             "--shape-max": "_smax{:g}".format(args.shape_max),
+             "--no-pass-by": "_nopb", "--no-backdate": "_nobd", "--no-free-kicks": "_nofk",
+             "--no-goal-kick": "_nogk", "--no-slow-stop": "_noslow", "--no-keepers": "_nok",
+             "--ball": "_ball", "--trace": ""}
+    flags = [a.split("=")[0] for a in sys.argv[1:] if a.startswith("--")]
+    name = "best_so_far_custom" if [f for f in flags if f not in named] else "best_so_far"
+    name += "".join(named[f] for f in named if f in flags)
     path = write_submission(os.path.join(args.out, "{}.csv".format(name)), labels)
     print("\n{}\nscore it:  python evaluation/run_evaluation.py --bootstrap 1000".format(
         os.path.relpath(path, ROOT)))
+
 
 
 if __name__ == '__main__':
