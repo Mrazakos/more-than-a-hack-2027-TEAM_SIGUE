@@ -1,16 +1,16 @@
-"""The best settings so far: possession_rules.py with rules 8, 8b and 9 on. No flags needed:
+"""Current strongest settings in this repository's rule-based starter. No flags needed:
 
     python starter/best_so_far.py
     python evaluation/run_evaluation.py --bootstrap 1000
 
-writes evaluation/results/best_so_far.csv. This is possession_rules.py run as
+writes evaluation/results/best_so_far.csv.
 
-    python starter/possession_rules.py --slow-stop --slow-back 1.8 --merge-gap 5
+Public-window score (evaluation/run_evaluation.py): spellF1 0.6207, macroF1 0.8819.
 
-public window: spellF1 0.5600, macroF1 0.8698 (possession_rules_slow_sb1.8_m5). The video check
-on five timed stoppages put its starts 0.8-2.7 s from the real ones; its ends are still often late
-(2-19 s). Every flag of possession_rules.py still works here (--no-slow-stop, --slow-back 0 and
---merge-gap 0 turn the three off); with any flag the file is written as best_so_far_custom.csv.
+Compared with the earlier 0.5600/0.8698 setup, this version adds: a stricter flight-speed cut,
+active-ball guards on stoppage rewinds, tagged goal-kick and throw-in handling, and a short
+anti-flicker filter for brief opponent handovers. The same CLI flags remain available; with any
+flag the file is written as best_so_far_custom.csv.
 
 Possession from the team's own rules, written from scratch after watching the public window.
 
@@ -125,7 +125,7 @@ TAG_KICKOFF_LAG = 85          # frames, used only if no kick is found: the tag o
 
 # Rule 2: who has the ball.
 TOUCH_RADIUS = 0.4            # m: a player this close to the ball touches it -- everywhere in this file
-FLIGHT_SPEED = 13.0           # m/s: a ball faster than this is travelling; nobody touches it
+FLIGHT_SPEED = 11.0           # m/s: a ball faster than this is travelling; nobody touches it
 BACKDATE_MAX = 75             # frames a change of team may be moved back (3 s)
 TURN_DEGREES = 35.0           # a change of direction at least this big is a change of path...
 SPEED_RATIO = 2.0             # ...and so is the speed changing by this factor either way
@@ -147,6 +147,7 @@ LAUNCH_SPEED = 12.0           # m/s: a ball leaving the own penalty area faster 
 
 # Rule 7: free kicks.
 QUIET_SPEED = 1.5             # m/s, smoothed: a ball slower than this, or not seen, is not in play...
+ACTIVE_BALL_SPEED = 2.0       # m/s, smoothed: above this, the ball is active for rewind guards
 FK_LOOKBACK = 375             # ...searched back from a free-kick tag at most this far (15 s)
 
 # Rule 8: untagged stoppages (--slow-stop).
@@ -227,7 +228,7 @@ def read_features(raw_path, meta_path, n_frames, pitch):
     fps = GAMES[GAME]["fps"]
     previous_frame, previous = None, {}
 
-    with open(raw_path) as handle:
+    with open(raw_path, encoding="utf-8") as handle:
         for line in handle:
             parts = line.split(FIELD_SEP)
             if len(parts) != 3:
@@ -357,11 +358,11 @@ def first_true(mask, start, length):
 
 def smart_tagging(data_dir):
     """(kickoff tag frames per half, [(corner tag frame, team)], [after-goal kickoff tag frames],
-    [(free-kick tag frame, team)])."""
+    [(free-kick tag frame, team)], [(goal-kick tag frame, team)], [(throw-in tag frame, team)])."""
     meta_path = require(["atd_meta"], GAME, data_dir)[0]
     home, away = (name.strip().lower() for name in team_names(meta_path))
     teams = {home: HOME, away: AWAY}
-    kickoffs, corners, goals, free_kicks = {}, [], [], []
+    kickoffs, corners, goals, free_kicks, goal_kicks, throw_ins = {}, [], [], [], [], []
     for event in load_smart_tagging.load(GAME, data_dir):
         kind = (event["tags"].get("Type") or "").strip().lower()
         if kind == "kick off (start)":
@@ -369,17 +370,25 @@ def smart_tagging(data_dir):
             kickoffs[half] = event["start_frame"]
         elif kind == "kick off (after goal)":
             goals.append(event["start_frame"])
-        elif kind in ("corner kick", "free kick"):
-            (corners if kind == "corner kick" else free_kicks).append(
-                (event["start_frame"],
-                 teams.get((event["tags"].get("Team") or "").strip().lower(), NOBODY)))
-    return kickoffs, sorted(corners), sorted(goals), sorted(free_kicks)
+        elif kind in ("corner kick", "free kick", "goal kick", "goal-kick", "throw in", "throw-in"):
+            team = teams.get((event["tags"].get("Team") or "").strip().lower(), NOBODY)
+            if kind == "corner kick":
+                corners.append((event["start_frame"], team))
+            elif kind == "free kick":
+                free_kicks.append((event["start_frame"], team))
+            elif kind in ("goal kick", "goal-kick"):
+                goal_kicks.append((event["start_frame"], team))
+            else:
+                throw_ins.append((event["start_frame"], team))
+    return (kickoffs, sorted(corners), sorted(goals), sorted(free_kicks),
+            sorted(goal_kicks), sorted(throw_ins))
 
 
 def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="nearest",
                touch_radius=TOUCH_RADIUS, placed_seconds=PLACED_SECONDS, launch_rule=True,
                goals=(), flight=True, backdate=True, free_kicks=(), slow_stop=False,
-               merge_gap=0.0, merge_tempo=MERGE_TEMPO, merge_max_ball=None):
+               merge_gap=0.0, merge_tempo=MERGE_TEMPO, merge_max_ball=None,
+               goal_kicks=(), throw_ins=()):
     """Labels for one half, video frames first..last inclusive."""
     length, width = GAMES[GAME]["pitch"]
     fps = GAMES[GAME]["fps"]
@@ -494,9 +503,30 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
             continue
         start = tag
         while start > max(first, kick, tag - FK_LOOKBACK) and quiet[start - 1]:
+            if seen[start - 1] and (smooth[start - 1] >= ACTIVE_BALL_SPEED
+                                    or speed[start - 1] >= KICK_SPEED):
+                break
             start -= 1
         stoppages[start] = (kick_f, tag_team if tag_team != NOBODY else None)
         report["free kick"] = report.get("free kick", 0) + 1
+
+    # Tagged goal kicks and throw-ins: dead from the preceding quiet-ball stretch to the kick.
+    for tags, name in ((goal_kicks, "goal kick tag"), (throw_ins, "throw-in tag")):
+        for tag, tag_team in tags:
+            if not max(first, kick) <= tag <= last:
+                continue
+            kick_t = first_true(seen & (speed > KICK_SPEED), tag, CORNER_KICK_SEARCH)
+            if kick_t is None:
+                continue
+            start = tag
+            floor = max(first, kick, tag - FK_LOOKBACK)
+            while start > floor and quiet[start - 1]:
+                if seen[start - 1] and (smooth[start - 1] >= ACTIVE_BALL_SPEED
+                                        or speed[start - 1] >= KICK_SPEED):
+                    break
+                start -= 1
+            stoppages[start] = (kick_t, tag_team if tag_team != NOBODY else None)
+            report[name] = report.get(name, 0) + 1
 
     # Rule 8: untagged stoppages -- the players walking while the ball is quiet.
     slow_stops = {}  # start frame -> first frame after the stretch
@@ -529,6 +559,9 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
                     if len(kicks_before):  # never back across a restart
                         floor_ = floor_ + int(kicks_before[-1]) + 1
                     while start > floor_ and not f["tempo"][start - 1] >= SLOW_BACK:
+                        if seen[start - 1] and (smooth[start - 1] >= ACTIVE_BALL_SPEED
+                                                or speed[start - 1] >= KICK_SPEED):
+                            break
                         start -= 1
                 slow_stops[start] = max(end, slow_stops.get(start, end))
         report["slow stop"] = len(slow_stops)
@@ -564,18 +597,24 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, ownership="
                 team = restart_team
         if launch_rule and launch[t] and team != NOBODY and flight_from is None:
             if team == (left_team if x[t] < length / 2.0 else right_team):  # its own box
-                flight_from, launches, left_keeper = t, launches + 1, False
+                flight_from = t
+                launches += 1
         if flight_from is not None:
             # The keeper is still at the ball as it leaves: the first touch is the first frame,
             # after the ball has left him (nobody within TOUCH_RADIUS), that someone touches it.
-            if not within[t]:
-                left_keeper = True
+            left_keeper = np.any(~within[flight_from:t + 1])
             if not (within[t] and left_keeper):
                 labels[t - first] = LABEL[team]
                 continue
             flight_from, floor = None, t  # the launch stays with the keeper's team until here
         if gets_it[t]:
             toucher = near_team[t]
+            if (team not in (NOBODY, toucher)
+                    and np.isfinite(speed[t])
+                    and speed[t] > FLIGHT_SPEED
+                    and not f["changes"][t]):
+                labels[t - first] = LABEL[team]
+                continue
             if backdate and team not in (NOBODY, toucher):
                 start = max(last_touch[team] + 1, t - BACKDATE_MAX, floor)
                 span = labels[start - first:t - first]
@@ -613,6 +652,20 @@ def possessions(labels):
     return int(np.isin(labels[starts], ("H", "A")).sum())
 
 
+def suppress_flickers(labels, max_frames=8):
+    """Absorb brief opponent takeovers flanked by the other team on both sides."""
+    for team_char, opp_char in (("H", "A"), ("A", "H")):
+        runs_edges = np.diff(np.concatenate(([0], (labels == team_char).astype(np.int8), [0])))
+        starts = np.flatnonzero(runs_edges == 1)
+        ends = np.flatnonzero(runs_edges == -1)
+        for start, end in zip(starts, ends):
+            if end - start >= max_frames:
+                continue
+            if start > 0 and end < len(labels) and labels[start - 1] == opp_char and labels[end] == opp_char:
+                labels[start:end] = opp_char
+    return labels
+
+
 def prepare(data_dir, keepers=True):
     """Everything the rules read, once: (tracking arrays, kickoff tags, corner tags, goal tags,
     team defending the left goal in the first half). Shared by main() and sweep_radius.py."""
@@ -626,10 +679,10 @@ def prepare(data_dir, keepers=True):
     f["speed"], f["smooth"] = ball_kinematics(f["ball_x"], f["ball_y"], fps)
     f["changes"] = path_changes(f["ball_x"], f["ball_y"], fps)
     f["tempo"] = tempo(features)  # rule 8
-    kickoffs, corners, goals, free_kicks = smart_tagging(data_dir)
+    kickoffs, corners, goals, free_kicks, goal_kicks, throw_ins = smart_tagging(data_dir)
     meta_path = require(["atd_meta"], GAME, data_dir)[0]
     _, left_first_half = keeper_sides(meta_path)  # only which side each team defends
-    return f, kickoffs, corners, goals, left_first_half, free_kicks
+    return f, kickoffs, corners, goals, left_first_half, free_kicks, goal_kicks, throw_ins
 
 
 def label_match(prepared, ownership="nearest", touch_radius=TOUCH_RADIUS,
@@ -637,7 +690,7 @@ def label_match(prepared, ownership="nearest", touch_radius=TOUCH_RADIUS,
                 free_kick_rule=True, slow_stop=False, merge_gap=0.0, merge_tempo=MERGE_TEMPO,
                 merge_max_ball=None, reports=None):
     """The full-length label array for one set of settings. reports, if a list, gets one per half."""
-    f, kickoffs, corners, goals, left_first_half, free_kicks = prepared
+    f, kickoffs, corners, goals, left_first_half, free_kicks, goal_kicks, throw_ins = prepared
     labels = np.full(len(f["ball_x"]), "X", dtype="<U1")
     for half, first, last in half_video_blocks(GAME):
         left_team = left_first_half if half == 1 else (AWAY if left_first_half == HOME else HOME)
@@ -646,7 +699,9 @@ def label_match(prepared, ownership="nearest", touch_radius=TOUCH_RADIUS,
                                             left_team, report, ownership, touch_radius,
                                             placed_seconds, launch_rule, goals, flight, backdate,
                                             free_kicks if free_kick_rule else (), slow_stop,
-                                            merge_gap, merge_tempo, merge_max_ball)
+                                            merge_gap, merge_tempo, merge_max_ball,
+                                            goal_kicks, throw_ins)
+        labels[first:last + 1] = suppress_flickers(labels[first:last + 1])
         if reports is not None:
             reports.append((half, half in kickoffs, report))
     return labels

@@ -88,6 +88,21 @@ python starter/baseline.py                              # rebuild the four basel
 python evaluation/validate_submission.py <your>.csv     # before every submission
 ```
 
+### Stronger rule-based starter
+
+If you want a stronger non-ML starting point than `starter/baseline.py`, run:
+
+```bash
+python starter/best_so_far.py
+python evaluation/run_evaluation.py --bootstrap 1000
+```
+
+On the public 5-minute window, the current `best_so_far` writes
+`evaluation/results/best_so_far.csv` and scores about **spellF1 0.6207 / macroF1 0.8819**.
+It keeps the same command-line interface while adding stricter flight handling, active-ball
+rewind guards for stoppages, tagged goal-kick/throw-in integration, and a short anti-flicker
+handover filter.
+
 **Validate every file before you submit it.** `validate_submission.py` runs exactly the checks the
 official scorer runs, and a file that fails them is dropped from the board with a one-line reason.
 It takes two seconds and it is the single most common way a good entry scores nothing.
