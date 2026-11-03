@@ -65,3 +65,9 @@ env/
 
 # -- experiment outputs (full label files) ----------------------------------------------------
 experiments/out/
+
+# external datasets used for tuning (licensed separately, large)
+data_external/
+
+# local git worktrees (Claude Code sessions)
+.claude/worktrees/

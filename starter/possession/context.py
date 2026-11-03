@@ -1,6 +1,7 @@
 """What the rules read: MatchData (everything, once) and HalfContext (one half's view of it)."""
 
 from dataclasses import dataclass
+from typing import Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -31,6 +32,10 @@ class MatchData:
     width_diff: np.ndarray  # home width minus away width, smoothed (rule 15)
     tags: SmartTags
     left_first_half: int    # team defending the left goal in the first half
+    # Other matches (external tuning data): None means the BAR-ATH constants in games.py.
+    pitch: Optional[Tuple[float, float]] = None        # (length, width) in metres
+    fps: Optional[float] = None
+    blocks: Optional[Sequence[Tuple[int, int, int]]] = None  # (half, first frame, last frame)
 
     def as_legacy(self):
         """The tuple prepare() used to return: (f dict, kickoffs, corners, goals,
@@ -74,8 +79,8 @@ class HalfContext:
         self.half = half
         self.first, self.last = first, last
         self.n = last - first + 1
-        self.length, self.width = GAMES[GAME]["pitch"]
-        self.fps = GAMES[GAME]["fps"]
+        self.length, self.width = match.pitch or GAMES[GAME]["pitch"]
+        self.fps = match.fps or GAMES[GAME]["fps"]
         self.left_team = match.left_first_half if half == 1 else opponent(match.left_first_half)
         self.tags = match.tags
         self.x, self.y = match.ball_x, match.ball_y

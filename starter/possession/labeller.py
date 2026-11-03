@@ -44,7 +44,7 @@ def label_match(match, params, reports=None):
     """The full-length label array for one set of settings. reports, if a list, gets one
     (half, kickoff was tagged, Report) per half."""
     labels = np.full(len(match.ball_x), "X", dtype="<U1")
-    for half, first, last in half_video_blocks(GAME):
+    for half, first, last in (match.blocks or half_video_blocks(GAME)):
         ctx = HalfContext(match, params, half, first, last)
         report = Report()
         labels[first:last + 1] = label_half(ctx, report)
