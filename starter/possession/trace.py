@@ -2,9 +2,7 @@
 
 import numpy as np
 
-from baseline import AWAY, HOME
-
-SIDE = {HOME: "H", AWAY: "A"}
+from .rules.pass_loop import LABEL as SIDE
 
 
 class Tracer:

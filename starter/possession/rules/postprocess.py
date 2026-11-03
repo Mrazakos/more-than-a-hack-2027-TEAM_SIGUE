@@ -14,7 +14,7 @@ def shape_veto(ctx, labels, report):
     p = ctx.params
     if p.shape_veto <= 0:
         return labels
-    n, vetoed = len(labels), 0
+    vetoed = 0
     wd = ctx.width_diff[ctx.first:ctx.last + 1]
     bounds = segment_bounds(labels)
     for i in range(1, len(bounds) - 2):

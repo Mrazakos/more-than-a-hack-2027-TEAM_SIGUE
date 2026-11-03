@@ -12,12 +12,21 @@ from baseline import NOBODY
 from ..signals import first_true, runs_of
 
 
+def _exit_masks(ctx):
+    """(over a goal line, over a touchline but not a goal line): the one definition of an exit."""
+    x, y = ctx.x, ctx.y
+    with np.errstate(invalid="ignore"):
+        over = ctx.seen & ((x < 0) | (x > ctx.length))
+        over_side = ctx.seen & ((y < 0) | (y > ctx.width)) & ~over
+    return over, over_side
+
+
 def _goal_line_exits(ctx, kick, gets_it, report):
     """Rules 4 and 5: exits over a goal line -- corner, goal kick, or the next touch."""
     p = ctx.params
     x, y = ctx.x, ctx.y
+    over, _ = _exit_masks(ctx)
     with np.errstate(invalid="ignore"):
-        over = ctx.seen & ((x < 0) | (x > ctx.length))
         in_box = ctx.seen & (np.minimum(x, ctx.length - x) <= p.box_depth) & (
             np.abs(y - ctx.width / 2.0) <= p.box_half_width)
         placed_ball = in_box & (ctx.smooth < p.placed_speed)
@@ -53,10 +62,8 @@ def _goal_line_exits(ctx, kick, gets_it, report):
 
 def _throw_ins(ctx, kick, gets_it, restarts, report):
     """Rule 4: over a touchline, play restarts with the next touch."""
-    x, y = ctx.x, ctx.y
-    with np.errstate(invalid="ignore"):
-        over = ctx.seen & ((x < 0) | (x > ctx.length))
-        over_side = ctx.seen & ((y < 0) | (y > ctx.width)) & ~over
+    x = ctx.x
+    _, over_side = _exit_masks(ctx)
     starts, ends = runs_of(over_side[ctx.first:ctx.last + 1])
     for start, end in zip(starts + ctx.first, ends + ctx.first):
         if start < kick or start in restarts:
