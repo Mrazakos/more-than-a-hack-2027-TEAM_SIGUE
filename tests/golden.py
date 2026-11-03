@@ -2,6 +2,7 @@
 
     python tests/golden.py --check                 # run every variant, compare with golden_hashes.json
     python tests/golden.py --record                # re-record the hashes (after an INTENDED change)
+    python tests/golden.py --check --legacy        # the same check on the frozen single-file starter/best_so_far_legacy.py
 
 Needs the data bundle (./data or $MTAH_DATA_DIR). What is stored is an md5 of each output CSV and the
 per-half summary lines the run prints, never the labels themselves (the repo is public). The hashes
@@ -19,6 +20,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SCRIPT = os.path.join(ROOT, "starter", "best_so_far.py")
+LEGACY_SCRIPT = os.path.join(ROOT, "starter", "best_so_far_legacy.py")
 HASHES = os.path.join(HERE, "golden_hashes.json")
 
 VARIANTS = [
@@ -29,10 +31,10 @@ VARIANTS = [
 ]
 
 
-def run(flags):
+def run(flags, script=SCRIPT):
     """(csv name, csv md5, stdout lines that do not depend on the output folder)."""
     with tempfile.TemporaryDirectory() as out:
-        done = subprocess.run([sys.executable, SCRIPT] + flags + ["--out", out], cwd=ROOT,
+        done = subprocess.run([sys.executable, script] + flags + ["--out", out], cwd=ROOT,
                               capture_output=True, text=True)
         if done.returncode:
             sys.exit("FAILED {}:\n{}".format(flags, done.stderr))
@@ -56,9 +58,13 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--record", action="store_true")
+    parser.add_argument("--legacy", action="store_true", help="with --check: run best_so_far_legacy.py")
     args = parser.parse_args()
+    if args.legacy and args.record:
+        parser.error("--record always records the maintained best_so_far.py")
+    script = LEGACY_SCRIPT if args.legacy else SCRIPT
 
-    results = {" ".join(flags) or "(default)": run(flags) for flags in VARIANTS}
+    results = {" ".join(flags) or "(default)": run(flags, script) for flags in VARIANTS}
     if args.record:
         with open(HASHES, "w") as handle:
             json.dump({k: {"csv": v[0], "md5": v[1], "stdout": v[2]} for k, v in results.items()},
@@ -69,6 +75,7 @@ def main():
         golden = json.load(handle)
     bad = 0
     for key, (name, digest, lines) in results.items():
+        name = name.replace("best_so_far_legacy", "best_so_far", 1)  # the legacy file only renames its outputs
         want = golden.get(key)
         problems = []
         if want is None:

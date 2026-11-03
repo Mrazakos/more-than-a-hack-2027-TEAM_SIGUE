@@ -14,6 +14,7 @@ There is no linter. The scorer is the check on accuracy. Two checks guard the re
 python -m unittest discover tests -v   # fast unit tests, no data needed
 python tests/golden.py --check         # 15 flag variants of best_so_far.py must reproduce tests/golden_hashes.json byte for byte (needs data)
 python tests/golden.py --record        # only after an INTENDED change to the labels: re-record the hashes and say so in the PR
+python tests/golden.py --check --legacy        # same check on the frozen single-file copy
 ```
 
 ```bash
@@ -54,6 +55,7 @@ Debugging tools in `starter/` (all need the gated data):
   - `config.py`: `Params`, a frozen dataclass with every constant and rule switch. Rules read it; nothing writes it (use `dataclasses.replace`). Never add module-level mutable settings.
   - `tracking.py` (ATD reader + npz cache), `tags.py` (`SmartTags`), `signals.py` (pure numpy helpers), `context.py` (`MatchData` read once, `HalfContext` per half), `report.py`, `trace.py`, `labeller.py` (wires the stages), `cli.py`.
   - `rules/`: `kickoff.py` (1), `touch.py` (2, 11), `restarts.py` (4-6), `stoppages.py` (7, 8, 8b), `pass_loop.py` (the only code that writes labels frame by frame; also 2's backdating and 13), `postprocess.py` (15, 14, 9, in that order). Order matters: event tables first, then the pass, then the postprocess passes.
+  - `starter/best_so_far_legacy.py` is the frozen pre-refactor single file, kept for comparison (outputs are named `best_so_far_legacy*.csv`, same feature cache). Don't develop there; `tests/golden.py --check --legacy` proves it still matches.
   - The cache name `best_so_far_features_v4_*.npz` is part of the extraction code in `tracking.py`; bump the version if the extracted features change.
 - The tracking is automatic and uncorrected, with gaps and identity switches. The ball is missing on about 41% of graded frames, so any code using ball position has to handle that.
 
