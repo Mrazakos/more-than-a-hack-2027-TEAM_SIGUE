@@ -57,11 +57,6 @@ and 12 were tried and taken out, and so was a flight rule in 2):
      with the other team on both sides, whose team is on average at least SHAPE_VETO (6 m)
      narrower than the other, goes to the other team. --shape-veto M sets it, 0 turns it off.
 
-Tried and removed (not numbered): Smart Tagging's team-phase tags (progression, build up,
-defending...) as a prior on the team. They agree with the truth on only 77% of frames against the
-system's 91%, and a veto on short possessions lowered spellF1 0.7333 -> 0.6143
-(experiments/log.jsonl, runs pv0.5, pv1.5, pv1_max10).
-
 Also: --ball FILE takes the ball from a fused track (starter/ball_fusion.py, from your own ball
 detector) instead of the ATD's; --trace FROM TO prints the pass frame by frame (labels unchanged).
 
