@@ -84,6 +84,32 @@ class Params_(unittest.TestCase):
         self.assertEqual(Params().dead_lead, 15)
 
 
+class Smoother(unittest.TestCase):
+    def test_viterbi_drops_a_short_blip_and_keeps_a_long_change(self):
+        from possession.smoother import viterbi, viterbi_batch
+        favour = {0: [0.0, -2.0, -2.0], 1: [-2.0, 0.0, -2.0]}  # log scores: H then A
+        seq = [0] * 20 + [1] * 2 + [0] * 20 + [1] * 30
+        emission = np.array([favour[s] for s in seq])
+        path = viterbi(emission, switch_team=6.0, switch_dead=6.0)
+        self.assertEqual(list(path), [0] * 42 + [1] * 30)
+        cheap = viterbi_batch(emission, [(0.5, 6.0), (6.0, 6.0)])
+        self.assertEqual(list(cheap[0]), seq)  # cheap switches follow every blip
+        self.assertEqual(list(cheap[1]), list(path))
+
+    def test_kept_dead_follows_the_mode(self):
+        from possession.smoother import kept_dead
+        ctx = types.SimpleNamespace(first=100)
+        labels = labels_of("H" * 10 + "D" * 10 + "H" * 10 + "D" * 10)
+        restarts = {110: (120, None, "corner"), 130: (140, None, "throw-in")}
+        events = kept_dead(ctx, labels, restarts, {}, "events")
+        self.assertEqual(list(np.flatnonzero(events)), list(range(10, 20)))
+        self.assertEqual(int(kept_dead(ctx, labels, restarts, {}, "all").sum()), 20)
+        self.assertFalse(kept_dead(ctx, labels, restarts, {}, "off").any())
+
+    def test_smoother_off_by_default(self):
+        self.assertFalse(Params().smoother)
+
+
 class Reporting(unittest.TestCase):
     def test_remove_drops_a_count_that_reaches_zero(self):
         report = Report()
@@ -127,6 +153,20 @@ class Postprocess(unittest.TestCase):
         ctx = fake_ctx(tempo_=np.full(400, 4.0))
         out = postprocess.merge_gaps(ctx, labels, kick=0, report=Report())
         self.assertEqual((out == "H").sum(), 50)
+
+    def test_min_spells_off_by_default(self):
+        labels = labels_of("H" * 30 + "A" * 2 + "H" * 30)
+        out = postprocess.min_spells(fake_ctx(), labels.copy(), Report())
+        self.assertEqual("".join(out), "".join(labels))
+
+    def test_min_spells_absorbs_shortest_first(self):
+        # 'A' x5 between H's goes to H; then 'D' x3 between H and A goes to the longer (A).
+        ctx = fake_ctx(dataclasses.replace(Params(), min_spell=0.4, min_dead=0.2), fps=25)
+        labels = labels_of("H" * 30 + "A" * 5 + "H" * 10 + "D" * 3 + "A" * 40)
+        report = Report()
+        out = postprocess.min_spells(ctx, labels, report)
+        self.assertEqual("".join(out), "H" * 45 + "A" * 43)
+        self.assertEqual(report.counts["short runs absorbed"], 2)
 
     def test_shape_veto_gives_a_narrow_blip_back(self):
         # A blip of 'A' between two 'H' stretches, with A 8 m narrower: not a possession.

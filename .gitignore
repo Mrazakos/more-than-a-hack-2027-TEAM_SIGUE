@@ -65,3 +65,7 @@ env/
 
 # -- experiment outputs (full label files) ----------------------------------------------------
 experiments/out/
+
+# external datasets used for tuning (licensed separately, large), and the log of every DFL run
+data_external/
+experiments/external_log.jsonl

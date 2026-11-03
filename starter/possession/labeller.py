@@ -2,7 +2,7 @@
 
     1. event tables   kickoff -> touches -> restarts -> free-kick and slow stoppages
     2. the pass       rules/pass_loop.run_pass  (the only code that writes the labels)
-    3. tidy-up        shape veto (15) -> dead tail (14) -> merge gaps (9)
+    3. tidy-up        shape veto (15) -> dead tail (14) -> merge gaps (9) -> smoother (17) -> minimum runs (16)
 """
 
 import numpy as np
@@ -13,10 +13,11 @@ from .context import HalfContext
 from .report import Report
 from .rules.kickoff import find_kickoff
 from .rules.pass_loop import run_pass
-from .rules.postprocess import dead_tail, kick_restart_frames, merge_gaps, shape_veto
+from .rules.postprocess import dead_tail, kick_restart_frames, merge_gaps, min_spells, shape_veto
 from .rules.restarts import find_restarts
 from .rules.stoppages import free_kick_stoppages, slow_stoppages
 from .rules.touch import find_touches
+from .smoother import kept_dead, smooth
 from .trace import Tracer
 
 
@@ -36,6 +37,9 @@ def label_half(ctx, report):
     shape_veto(ctx, labels, report)
     dead_tail(ctx, labels, kick, kick_restarts)
     merge_gaps(ctx, labels, kick, report)
+    smooth(ctx, labels, kick, report,
+           kept_dead(ctx, labels, restarts, stoppages, ctx.params.smoother_keep_dead))
+    min_spells(ctx, labels, report)
     tracer.flush(labels)
     return labels
 
@@ -44,7 +48,7 @@ def label_match(match, params, reports=None):
     """The full-length label array for one set of settings. reports, if a list, gets one
     (half, kickoff was tagged, Report) per half."""
     labels = np.full(len(match.ball_x), "X", dtype="<U1")
-    for half, first, last in half_video_blocks(GAME):
+    for half, first, last in (match.blocks or half_video_blocks(GAME)):
         ctx = HalfContext(match, params, half, first, last)
         report = Report()
         labels[first:last + 1] = label_half(ctx, report)
