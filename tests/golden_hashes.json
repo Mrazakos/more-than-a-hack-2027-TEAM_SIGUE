@@ -1,0 +1,167 @@
+{
+ "(default)": {
+  "csv": "best_so_far_custom.csv",
+  "md5": "f098b44e6617e4c444a1e1009236ef59",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 135   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 154   dead 53%"
+   ],
+   "output_md5": "e644e035734c213f0e17d9ba7abc68a3"
+  }
+ },
+ "--no-backdate": {
+  "csv": "best_so_far_custom_nobd.csv",
+  "md5": "5c52487812ec6c5d64c13ed41001df01",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 2 shape vetoes, 16 merged gaps   possessions 139   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 1 shape vetoes, 11 merged gaps   possessions 156   dead 53%"
+   ],
+   "output_md5": "63b9ef12e9b3299d903684381888850b"
+  }
+ },
+ "--no-pass-by": {
+  "csv": "best_so_far_custom_nopb.csv",
+  "md5": "02bd3a1a86827cb54d381c3167f32031",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 15 shape vetoes, 13 merged gaps   possessions 272   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 12 shape vetoes, 10 merged gaps   possessions 336   dead 53%"
+   ],
+   "output_md5": "53ecca61d1985e8a48550e7118e076bb"
+  }
+ },
+ "--no-goal-kick": {
+  "csv": "best_so_far_custom_nogk.csv",
+  "md5": "974d41456b993777613b941acf5b5003",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 7 next touch, 3 corner, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 135   dead 48%",
+    "half 2: kickoff at 113660   restarts: 8 next touch, 3 corner, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 155   dead 53%"
+   ],
+   "output_md5": "7e803cd26fe0554889eb49cb90532134"
+  }
+ },
+ "--no-free-kicks": {
+  "csv": "best_so_far_custom_nofk.csv",
+  "md5": "b296b918e83f72550d652998cc70e3ee",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 134   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 155   dead 53%"
+   ],
+   "output_md5": "da5c6e0f919914cc982584918c7c5f38"
+  }
+ },
+ "--no-slow-stop": {
+  "csv": "best_so_far_custom_noslow.csv",
+  "md5": "42c5983b9d18375ff6451a94b3b6e868",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 5 shape vetoes, 2 merged gaps   possessions 126   dead 16%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 2 shape vetoes, 6 merged gaps   possessions 138   dead 21%"
+   ],
+   "output_md5": "34ae6598c777251b892d0394c44135f1"
+  }
+ },
+ "--no-keepers": {
+  "csv": "best_so_far_custom_nok.csv",
+  "md5": "bf1b00a7158dbb42575c5048bd6fa4dd",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 5 shape vetoes, 16 merged gaps   possessions 141   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 5 shape vetoes, 11 merged gaps   possessions 158   dead 53%"
+   ],
+   "output_md5": "ab83a094926d98c77c8b7e0c7c743d98"
+  }
+ },
+ "--dead-lead 0": {
+  "csv": "best_so_far_custom_lead0.csv",
+  "md5": "322d56fb7cb7099b83647656cb42d6ec",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 17 merged gaps   possessions 136   dead 48%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 12 merged gaps   possessions 154   dead 53%"
+   ],
+   "output_md5": "06661738eb5de7ffc7b0a460f7ece025"
+  }
+ },
+ "--dead-tail 0": {
+  "csv": "best_so_far_custom_tail0.csv",
+  "md5": "5dfbab0f78fd42ddcde9f6fe4de1ca17",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 14 merged gaps   possessions 138   dead 48%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 154   dead 52%"
+   ],
+   "output_md5": "a2023a6676693d78ae2ad2003b79ba66"
+  }
+ },
+ "--shape-veto 0": {
+  "csv": "best_so_far_custom_sv0.csv",
+  "md5": "8fe51a3c06e5af3905c450206a71fcf2",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 16 merged gaps   possessions 143   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 11 merged gaps   possessions 158   dead 53%"
+   ],
+   "output_md5": "367a024d191699451f7bf6d8ccd8b258"
+  }
+ },
+ "--merge-gap 0": {
+  "csv": "best_so_far_custom_m0.csv",
+  "md5": "4758d21731e109cc3b35e783a8dd6d2e",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes   possessions 157   dead 48%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes   possessions 168   dead 52%"
+   ],
+   "output_md5": "00ffca296489d2f9f806cb4f3da935e3"
+  }
+ },
+ "--slow-back 0": {
+  "csv": "best_so_far_custom_sb0.csv",
+  "md5": "484751109c747efd15204aed6b0387fe",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 28 merged gaps   possessions 138   dead 44%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 22 merged gaps   possessions 157   dead 49%"
+   ],
+   "output_md5": "0dded5de96a65ab5de38d0be5505067d"
+  }
+ },
+ "--nearest-radius 1.0": {
+  "csv": "best_so_far_custom_t1.csv",
+  "md5": "50d9ba3b986911eab0217b7e12f73b35",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 2 shape vetoes, 14 merged gaps   possessions 116   dead 50%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 1 shape vetoes, 9 merged gaps   possessions 137   dead 55%"
+   ],
+   "output_md5": "a92933bd15ccf1561043e8546329357f"
+  }
+ },
+ "--shape-max 8 --shape-veto 4": {
+  "csv": "best_so_far_custom_sv4_smax8.csv",
+  "md5": "afb55cdf2d38662d1d2013824795b9cc",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 9 shape vetoes, 16 merged gaps   possessions 125   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 9 shape vetoes, 11 merged gaps   possessions 140   dead 53%"
+   ],
+   "output_md5": "cd711f4507b6c674c7d304878159344b"
+  }
+ },
+ "--trace 11185 11300": {
+  "csv": "best_so_far_custom.csv",
+  "md5": "f098b44e6617e4c444a1e1009236ef59",
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 135   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 154   dead 53%"
+   ],
+   "output_md5": "2bba33f22e862e2e758c3aec4180f20c"
+  }
+ }
+}

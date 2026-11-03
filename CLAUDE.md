@@ -8,7 +8,14 @@ Team SIGUE's working copy of the public starter repo for the "More than a Hack 2
 
 ## Commands
 
-There is no test suite or linter. The scorer is the check.
+There is no linter. The scorer is the check on accuracy. Two checks guard the refactored labeller (`starter/possession/`) against unintended changes:
+
+```bash
+python -m unittest discover tests -v   # fast unit tests, no data needed
+python tests/golden.py --check         # 15 flag variants of best_so_far.py must reproduce tests/golden_hashes.json byte for byte (needs data)
+python tests/golden.py --record        # only after an INTENDED change to the labels: re-record the hashes and say so in the PR
+python tests/golden.py --check --legacy        # same check on the frozen single-file copy
+```
 
 ```bash
 pip install -r requirements.txt            # numpy + pandas: all the scorer needs
@@ -21,7 +28,7 @@ python evaluation/validate_submission.py <file.csv>    # run before every submis
 
 python starter/baseline.py        # regenerate the four committed baselines (numpy only)
 python starter/best_so_far.py     # the team's rule-based system -> evaluation/results/best_so_far.csv
-python starter/basic_rules.py     # the same rules built up one at a time (best_so_far.py stays untouched)
+python starter/basic_rules.py     # the same rules built up one at a time (best_so_far's rules are not modified; it only reuses its reader)
 ```
 
 `best_so_far.py` has an `--no-<rule>` or numeric flag for each rule (`--no-backdate`, `--no-goal-kick`, `--dead-lead N`, `--shape-veto M` and so on; see `--help`). `--trace FROM TO` prints its decisions frame by frame.
@@ -43,7 +50,13 @@ Debugging tools in `starter/` (all need the gated data):
   - The broadcast video is not aligned to the tactical video.
 - `starter/load_atd.py`, `load_smart_tagging.py` and `load_homography.py` put the three data sources onto video frames. `utils.py` has the pitch plots.
 - `evaluation/possession_metrics.py` defines every metric. `run_evaluation.py` is the official scorer, and the same file produces the official result.
-- `starter/best_so_far.py` is an ordered rule-based state machine. It starts from nearest-player-to-ball and layers on rules for goalkeepers, kickoff, touch radius with backdating, ball out of play, corners, goal kicks, goals, free kicks, untagged stoppages, pass-by, dead-ball lead and tail, and a team-shape veto. Its module docstring is the authoritative rule list. Rule numbers are historical, and 3, 10 and 12 were tried and removed, so don't renumber.
+- `starter/best_so_far.py` is the entry point of an ordered rule-based state machine. It starts from nearest-player-to-ball and layers on rules for goalkeepers, kickoff, touch radius with backdating, ball out of play, corners, goal kicks, goals, free kicks, untagged stoppages, pass-by, dead-ball lead and tail, and a team-shape veto. Its module docstring is the authoritative rule list. Rule numbers are historical, and 3, 10 and 12 were tried and removed, so don't renumber.
+- The code is the package `starter/possession/`; `best_so_far.py` only holds the docstring, the CLI hand-off and the legacy `prepare()` / `path_changes` / `load_features` that `basic_rules.py` imports.
+  - `config.py`: `Params`, a frozen dataclass with every constant and rule switch. Rules read it; nothing writes it (use `dataclasses.replace`). Never add module-level mutable settings.
+  - `tracking.py` (ATD reader + npz cache), `tags.py` (`SmartTags`), `signals.py` (pure numpy helpers), `context.py` (`MatchData` read once, `HalfContext` per half), `report.py`, `trace.py`, `labeller.py` (wires the stages), `cli.py`.
+  - `rules/`: `kickoff.py` (1), `touch.py` (2, 11), `restarts.py` (4-6), `stoppages.py` (7, 8, 8b), `pass_loop.py` (the only code that writes labels frame by frame; also 2's backdating and 13), `postprocess.py` (15, 14, 9, in that order). Order matters: event tables first, then the pass, then the postprocess passes.
+  - `starter/best_so_far_legacy.py` is the frozen pre-refactor single file, kept for comparison (outputs are named `best_so_far_legacy*.csv`, same feature cache). Don't develop there; `tests/golden.py --check --legacy` proves it still matches.
+  - The cache name `best_so_far_features_v4_*.npz` is part of the extraction code in `tracking.py`; bump the version if the extracted features change.
 - The tracking is automatic and uncorrected, with gaps and identity switches. The ball is missing on about 41% of graded frames, so any code using ball position has to handle that.
 
 ## Things to watch
