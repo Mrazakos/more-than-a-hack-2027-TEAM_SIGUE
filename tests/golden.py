@@ -41,7 +41,14 @@ def run(flags):
             digest = hashlib.md5(handle.read()).hexdigest()
     lines = [line for line in done.stdout.splitlines()
              if line.strip() and ".csv" not in line and not line.startswith("score it")]
-    return name, digest, lines
+    return name, digest, summarise(lines)
+
+
+def summarise(lines):
+    """Only the per-half summary lines are kept readable; everything printed (a --trace table has
+    one final label per frame) is represented by a hash, so no labels are published."""
+    return {"halves": [line for line in lines if line.startswith("half ")],
+            "output_md5": hashlib.md5("\n".join(lines).encode()).hexdigest()}
 
 
 def main():

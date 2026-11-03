@@ -9,7 +9,7 @@ import numpy as np
 
 from games import GAME, half_video_blocks
 
-from .context import HalfContext, opponent
+from .context import HalfContext
 from .report import Report
 from .rules.kickoff import find_kickoff
 from .rules.pass_loop import run_pass

@@ -2,238 +2,166 @@
  "(default)": {
   "csv": "best_so_far_custom.csv",
   "md5": "f098b44e6617e4c444a1e1009236ef59",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 135   dead 49%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 154   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 135   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 154   dead 53%"
+   ],
+   "output_md5": "e644e035734c213f0e17d9ba7abc68a3"
+  }
  },
  "--no-backdate": {
   "csv": "best_so_far_custom_nobd.csv",
   "md5": "5c52487812ec6c5d64c13ed41001df01",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 2 shape vetoes, 16 merged gaps   possessions 139   dead 49%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 1 shape vetoes, 11 merged gaps   possessions 156   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 2 shape vetoes, 16 merged gaps   possessions 139   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 1 shape vetoes, 11 merged gaps   possessions 156   dead 53%"
+   ],
+   "output_md5": "63b9ef12e9b3299d903684381888850b"
+  }
  },
  "--no-pass-by": {
   "csv": "best_so_far_custom_nopb.csv",
   "md5": "02bd3a1a86827cb54d381c3167f32031",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 15 shape vetoes, 13 merged gaps   possessions 272   dead 49%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 12 shape vetoes, 10 merged gaps   possessions 336   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 15 shape vetoes, 13 merged gaps   possessions 272   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 12 shape vetoes, 10 merged gaps   possessions 336   dead 53%"
+   ],
+   "output_md5": "53ecca61d1985e8a48550e7118e076bb"
+  }
  },
  "--no-goal-kick": {
   "csv": "best_so_far_custom_nogk.csv",
   "md5": "974d41456b993777613b941acf5b5003",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 7 next touch, 3 corner, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 135   dead 48%",
-   "half 2: kickoff at 113660   restarts: 8 next touch, 3 corner, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 155   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 7 next touch, 3 corner, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 135   dead 48%",
+    "half 2: kickoff at 113660   restarts: 8 next touch, 3 corner, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 155   dead 53%"
+   ],
+   "output_md5": "7e803cd26fe0554889eb49cb90532134"
+  }
  },
  "--no-free-kicks": {
   "csv": "best_so_far_custom_nofk.csv",
   "md5": "b296b918e83f72550d652998cc70e3ee",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 134   dead 49%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 155   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 134   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 155   dead 53%"
+   ],
+   "output_md5": "da5c6e0f919914cc982584918c7c5f38"
+  }
  },
  "--no-slow-stop": {
   "csv": "best_so_far_custom_noslow.csv",
   "md5": "42c5983b9d18375ff6451a94b3b6e868",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 5 shape vetoes, 2 merged gaps   possessions 126   dead 16%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 2 shape vetoes, 6 merged gaps   possessions 138   dead 21%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 5 shape vetoes, 2 merged gaps   possessions 126   dead 16%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 2 shape vetoes, 6 merged gaps   possessions 138   dead 21%"
+   ],
+   "output_md5": "34ae6598c777251b892d0394c44135f1"
+  }
  },
  "--no-keepers": {
   "csv": "best_so_far_custom_nok.csv",
   "md5": "bf1b00a7158dbb42575c5048bd6fa4dd",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 5 shape vetoes, 16 merged gaps   possessions 141   dead 49%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 5 shape vetoes, 11 merged gaps   possessions 158   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 5 shape vetoes, 16 merged gaps   possessions 141   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 5 shape vetoes, 11 merged gaps   possessions 158   dead 53%"
+   ],
+   "output_md5": "ab83a094926d98c77c8b7e0c7c743d98"
+  }
  },
  "--dead-lead 0": {
   "csv": "best_so_far_custom_lead0.csv",
   "md5": "322d56fb7cb7099b83647656cb42d6ec",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 17 merged gaps   possessions 136   dead 48%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 12 merged gaps   possessions 154   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 17 merged gaps   possessions 136   dead 48%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 12 merged gaps   possessions 154   dead 53%"
+   ],
+   "output_md5": "06661738eb5de7ffc7b0a460f7ece025"
+  }
  },
  "--dead-tail 0": {
   "csv": "best_so_far_custom_tail0.csv",
   "md5": "5dfbab0f78fd42ddcde9f6fe4de1ca17",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 14 merged gaps   possessions 138   dead 48%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 154   dead 52%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 14 merged gaps   possessions 138   dead 48%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 154   dead 52%"
+   ],
+   "output_md5": "a2023a6676693d78ae2ad2003b79ba66"
+  }
  },
  "--shape-veto 0": {
   "csv": "best_so_far_custom_sv0.csv",
   "md5": "8fe51a3c06e5af3905c450206a71fcf2",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 16 merged gaps   possessions 143   dead 49%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 11 merged gaps   possessions 158   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 16 merged gaps   possessions 143   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 11 merged gaps   possessions 158   dead 53%"
+   ],
+   "output_md5": "367a024d191699451f7bf6d8ccd8b258"
+  }
  },
  "--merge-gap 0": {
   "csv": "best_so_far_custom_m0.csv",
   "md5": "4758d21731e109cc3b35e783a8dd6d2e",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes   possessions 157   dead 48%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes   possessions 168   dead 52%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes   possessions 157   dead 48%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes   possessions 168   dead 52%"
+   ],
+   "output_md5": "00ffca296489d2f9f806cb4f3da935e3"
+  }
  },
  "--slow-back 0": {
   "csv": "best_so_far_custom_sb0.csv",
   "md5": "484751109c747efd15204aed6b0387fe",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 28 merged gaps   possessions 138   dead 44%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 22 merged gaps   possessions 157   dead 49%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 28 merged gaps   possessions 138   dead 44%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 22 merged gaps   possessions 157   dead 49%"
+   ],
+   "output_md5": "0dded5de96a65ab5de38d0be5505067d"
+  }
  },
  "--nearest-radius 1.0": {
   "csv": "best_so_far_custom_t1.csv",
   "md5": "50d9ba3b986911eab0217b7e12f73b35",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 2 shape vetoes, 14 merged gaps   possessions 116   dead 50%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 1 shape vetoes, 9 merged gaps   possessions 137   dead 55%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 2 shape vetoes, 14 merged gaps   possessions 116   dead 50%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 1 shape vetoes, 9 merged gaps   possessions 137   dead 55%"
+   ],
+   "output_md5": "a92933bd15ccf1561043e8546329357f"
+  }
  },
  "--shape-max 8 --shape-veto 4": {
   "csv": "best_so_far_custom_sv4_smax8.csv",
   "md5": "afb55cdf2d38662d1d2013824795b9cc",
-  "stdout": [
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 9 shape vetoes, 16 merged gaps   possessions 125   dead 49%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 9 shape vetoes, 11 merged gaps   possessions 140   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 9 shape vetoes, 16 merged gaps   possessions 125   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 9 shape vetoes, 11 merged gaps   possessions 140   dead 53%"
+   ],
+   "output_md5": "cd711f4507b6c674c7d304878159344b"
+  }
  },
  "--trace 11185 11300": {
   "csv": "best_so_far_custom.csv",
   "md5": "f098b44e6617e4c444a1e1009236ef59",
-  "stdout": [
-   "  frame  final  holds  seen  speed  near  H dist  A dist  touch  played  what happened",
-   "   11185    D      A     -       -    -        -       -    -      -   dead until 11189",
-   "   11186    D      A     -       -    -        -       -    -      -   dead until 11189",
-   "   11187    D      A     y       -    A     8.87    0.42    y      -   dead until 11189",
-   "   11188    D      A     y       -    A     9.54    1.12    y      -   dead until 11189",
-   "   11189    A      A     y    17.3    A    10.21    1.84    -      -   ",
-   "   11190    A      A     y    17.5    A    10.55    2.57    -      -   ",
-   "   11191    A      A     y    17.5    A    10.52    3.30    -      -   ",
-   "   11192    A      A     y    17.5    A    10.52    4.04    -      -   ",
-   "   11193    A      A     y    17.5    A    10.55    4.78    -      -   ",
-   "   11194    A      A     y    17.4    A    10.61    5.51    -      -   ",
-   "   11195    A      A     y    17.2    A    10.69    5.60    -      -   ",
-   "   11196    A      A     y    17.0    A    10.80    5.27    -      -   ",
-   "   11197    A      A     y    16.8    A    10.92    5.02    -      -   ",
-   "   11198    A      A     y    16.4    A    11.05    4.86    -      -   ",
-   "   11199    A      A     y    16.1    A    11.20    4.80    -      -   ",
-   "   11200    A      A     y    15.7    A    11.36    4.82    -      -   ",
-   "   11201    A      A     y    15.2    A    11.52    4.92    -      -   ",
-   "   11202    A      A     y    14.7    A    11.68    5.10    -      -   ",
-   "   11203    A      A     y    14.2    A    11.83    5.32    -      -   ",
-   "   11204    A      A     y    13.6    A    11.99    5.59    -      -   ",
-   "   11205    A      A     y    13.0    A    12.13    5.88    -      -   ",
-   "   11206    A      A     y    12.4    A    12.27    6.19    -      -   ",
-   "   11207    A      A     y    11.8    A    12.40    6.51    -      -   ",
-   "   11208    A      A     y    11.1    A    12.51    6.82    -      -   ",
-   "   11209    A      A     y    10.4    A    12.60    7.12    -      -   ",
-   "   11210    A      A     y     9.8    A    12.68    7.42    -      -   ",
-   "   11211    A      A     y     9.1    A    12.74    7.70    -      -   ",
-   "   11212    A      A     y     8.4    A    12.79    7.96    -      -   ",
-   "   11213    A      A     y     7.7    A    12.81    8.20    -      -   ",
-   "   11214    A      A     y     7.1    A    12.82    8.31    -      -   ",
-   "   11215    A      A     y     6.4    A    12.81    8.30    -      -   ",
-   "   11216    A      A     y     5.8    A    12.78    8.30    -      -   ",
-   "   11217    A      A     y     5.2    A    12.73    8.31    -      -   ",
-   "   11218    A      A     y     4.7    A    12.66    8.33    -      -   ",
-   "   11219    A      A     y     4.2    A    12.58    8.35    -      -   ",
-   "   11220    A      A     y     3.7    A    12.48    8.38    -      -   ",
-   "   11221    A      A     y     3.3    A    12.36    8.41    -      -   ",
-   "   11222    A      A     y     3.0    A    12.24    8.45    -      y   ",
-   "   11223    A      A     y     2.7    A    12.10    8.48    -      y   ",
-   "   11224    A      A     y     2.4    A    11.94    8.52    -      y   ",
-   "   11225    A      A     y     2.2    A    11.78    8.55    -      y   ",
-   "   11226    A      A     y     2.0    A    11.61    8.59    -      y   ",
-   "   11227    A      A     y     1.9    A    11.43    8.63    -      y   ",
-   "   11228    A      A     y     1.8    A    11.24    8.66    -      y   ",
-   "   11229    A      A     y     1.8    A    11.05    8.70    -      y   ",
-   "   11230    A      A     y     1.7    A    10.86    8.73    -      y   ",
-   "   11231    A      A     y     1.7    A    10.66    8.77    -      y   ",
-   "   11232    A      A     y     1.7    A    10.45    8.80    -      y   ",
-   "   11233    A      A     y     1.7    A    10.25    8.84    -      y   ",
-   "   11234    A      A     y     1.7    A    10.04    8.87    -      y   ",
-   "   11235    A      A     y     1.7    A     9.82    8.90    -      y   ",
-   "   11236    A      A     y     1.7    A     9.60    8.93    -      y   ",
-   "   11237    A      A     y     1.7    A     9.38    8.96    -      y   ",
-   "   11238    A      A     y     1.7    A     9.16    8.98    -      y   ",
-   "   11239    A      A     y     1.8    H     8.92    9.00    -      y   ",
-   "   11240    A      A     y     1.9    H     8.68    9.02    -      y   ",
-   "   11241    A      A     y     2.1    H     8.43    9.03    -      y   ",
-   "   11242    A      A     y     2.4    H     8.16    9.03    -      y   ",
-   "   11243    A      A     y     2.8    H     7.88    9.02    -      y   ",
-   "   11244    A      A     y     3.3    H     7.59    9.01    -      -   ",
-   "   11245    A      A     y     3.9    H     7.28    8.98    -      -   ",
-   "   11246    A      A     y     4.5    H     6.95    8.95    -      -   ",
-   "   11247    A      A     y     5.3    H     6.59    8.91    -      -   ",
-   "   11248    A      A     y     6.2    H     6.22    8.85    -      -   ",
-   "   11249    A      A     y     7.1    H     5.82    8.79    -      -   ",
-   "   11250    A      A     y     8.0    H     5.41    8.65    -      -   ",
-   "   11251    A      A     y     9.0    H     4.98    8.37    -      -   ",
-   "   11252    A      A     y    10.1    H     4.55    8.04    -      -   ",
-   "   11253    A      A     y    11.2    H     4.11    7.68    -      -   ",
-   "   11254    A      A     y    12.3    H     3.71    7.28    -      -   ",
-   "   11255    A      A     y    13.4    H     3.37    6.83    -      -   ",
-   "   11256    A      A     y    14.4    H     3.13    6.35    -      -   ",
-   "   11257    A      A     y    15.5    H     3.06    5.83    -      -   ",
-   "   11258    A      A     y    16.4    H     3.19    5.26    -      -   ",
-   "   11259    A      A     y    17.4    H     3.53    4.67    -      -   ",
-   "   11260    A      A     y    18.2    H     3.43    4.04    -      -   ",
-   "   11261    A      A     y    19.0    H     2.58    3.39    -      -   ",
-   "   11262    A      A     y    19.7    H     1.73    2.71    -      -   ",
-   "   11263    A      A     y    20.3    H     0.96    2.03    y      -   opponent touch refused (the ball went by: rule 11)",
-   "   11264    A      A     y    20.8    H     0.79    1.36    y      -   opponent touch refused (the ball went by: rule 11)",
-   "   11265    A      A     y    21.2    A     1.49    0.80    y      -   ",
-   "   11266    A      A     y    21.5    A     2.40    0.74    y      -   ",
-   "   11267    A      A     y    21.7    A     3.37    1.27    y      -   ",
-   "   11268    A      A     y    21.7    A     4.36    1.96    -      -   ",
-   "   11269    A      A     y    21.7    A     5.36    2.68    -      -   ",
-   "   11270    A      A     y    21.6    A     6.36    3.41    -      -   ",
-   "   11271    A      A     y    21.3    A     7.35    4.14    -      -   ",
-   "   11272    A      A     y    21.0    A     8.34    4.85    -      -   ",
-   "   11273    A      A     y    20.6    A     9.31    5.55    -      -   ",
-   "   11274    A      A     y    20.2    A     9.03    6.23    -      -   ",
-   "   11275    A      A     y    19.7    A     8.61    6.88    -      -   ",
-   "   11276    A      A     y    19.1    A     8.23    7.51    -      -   ",
-   "   11277    A      A     y    18.6    H     7.89    8.12    -      -   ",
-   "   11278    A      A     y    18.0    H     7.59    8.69    -      -   ",
-   "   11279    A      A     y    17.3    H     7.33    9.17    -      -   ",
-   "   11280    A      A     y    16.7    H     7.12    9.01    -      -   ",
-   "   11281    A      A     y    16.1    H     6.95    8.88    -      -   ",
-   "   11282    A      A     y    15.5    H     6.83    8.78    -      -   ",
-   "   11283    A      A     y    15.0    H     6.75    8.70    -      -   ",
-   "   11284    A      A     y    14.4    H     6.70    8.65    -      -   ",
-   "   11285    A      A     y    13.9    H     6.70    8.61    -      -   ",
-   "   11286    A      A     y    13.4    H     6.73    8.58    -      -   ",
-   "   11287    A      A     y    13.0    H     6.80    8.57    -      -   ",
-   "   11288    A      A     y    12.6    H     8.13    8.57    -      -   ",
-   "   11289    A      A     y    12.3    H     8.21    8.58    -      -   ",
-   "   11290    A      A     y    12.0    H     8.30    8.60    -      -   ",
-   "   11291    A      A     y    11.8    H     8.40    8.62    -      -   ",
-   "   11292    A      A     y    11.6    H     8.51    8.65    -      -   ",
-   "   11293    A      A     y    11.4    H     8.63    8.68    -      -   ",
-   "   11294    A      A     y    11.3    A     8.76    8.72    -      -   ",
-   "   11295    A      A     y    11.2    A     8.89    8.77    -      -   ",
-   "   11296    A      A     y    11.1    A     9.03    8.81    -      -   ",
-   "   11297    A      A     y    11.1    A     9.18    8.87    -      -   ",
-   "   11298    A      A     y    11.1    A     9.33    8.93    -      -   ",
-   "   11299    A      A     y    11.1    A     9.49    8.99    -      -   ",
-   "   11300    A      A     y    11.2    A     9.65    9.06    -      -   ",
-   "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 135   dead 49%",
-   "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 154   dead 53%"
-  ]
+  "stdout": {
+   "halves": [
+    "half 1: kickoff at 11189   restarts: 5 next touch, 3 corner, 2 goal kick, 19 throw-in, 3 goal, 4 free kick, 101 slow stop, 4 shape vetoes, 16 merged gaps   possessions 135   dead 49%",
+    "half 2: kickoff at 113660   restarts: 5 goal kick, 3 corner, 3 next touch, 37 throw-in, 1 goal, 1 free kick, 97 slow stop, 2 shape vetoes, 11 merged gaps   possessions 154   dead 53%"
+   ],
+   "output_md5": "2bba33f22e862e2e758c3aec4180f20c"
+  }
  }
 }

@@ -81,8 +81,14 @@ from possession.config import Params  # noqa: E402
 from possession.cli import main as _main  # noqa: E402
 from possession.context import prepare_match  # noqa: E402
 from possession.labeller import label_match, possessions  # noqa: E402,F401
-from possession.signals import path_changes  # noqa: E402,F401  (starter/basic_rules.py)
+from possession.signals import ball_kinematics, path_changes  # noqa: E402,F401  (basic_rules.py, review.py)
+from possession.signals import tempo as _tempo  # noqa: E402
 from possession.tracking import load_features  # noqa: E402,F401
+
+
+def tempo(features):
+    """Legacy signature used by starter/review.py: takes the features dict."""
+    return _tempo(features["player_speed"])
 
 
 def prepare(data_dir, keepers=True, ball_path=None):

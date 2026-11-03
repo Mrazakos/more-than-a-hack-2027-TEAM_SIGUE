@@ -61,6 +61,19 @@ class Signals(unittest.TestCase):
         self.assertFalse(changed[5:10].any())
 
 
+class LegacyApi(unittest.TestCase):
+    def test_best_so_far_keeps_the_names_other_scripts_use(self):
+        # basic_rules.py: prepare, path_changes.  review.py: load_features, ball_kinematics, tempo.
+        import best_so_far
+        for name in ("prepare", "path_changes", "load_features", "ball_kinematics", "tempo"):
+            self.assertTrue(callable(getattr(best_so_far, name)), name)
+
+    def test_legacy_tempo_takes_the_features_dict(self):
+        import best_so_far
+        out = best_so_far.tempo({"player_speed": np.full(200, 2.0)})
+        self.assertAlmostEqual(out[100], 2.0)
+
+
 class Params_(unittest.TestCase):
     def test_frozen(self):
         with self.assertRaises(dataclasses.FrozenInstanceError):
