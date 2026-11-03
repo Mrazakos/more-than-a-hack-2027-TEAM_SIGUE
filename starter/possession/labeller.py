@@ -17,7 +17,7 @@ from .rules.postprocess import dead_tail, kick_restart_frames, merge_gaps, min_s
 from .rules.restarts import find_restarts
 from .rules.stoppages import free_kick_stoppages, slow_stoppages
 from .rules.touch import find_touches
-from .smoother import smooth
+from .smoother import kept_dead, smooth
 from .trace import Tracer
 
 
@@ -37,7 +37,8 @@ def label_half(ctx, report):
     shape_veto(ctx, labels, report)
     dead_tail(ctx, labels, kick, kick_restarts)
     merge_gaps(ctx, labels, kick, report)
-    smooth(ctx, labels, kick, report)
+    smooth(ctx, labels, kick, report,
+           kept_dead(ctx, labels, restarts, stoppages, ctx.params.smoother_keep_dead))
     min_spells(ctx, labels, report)
     tracer.flush(labels)
     return labels

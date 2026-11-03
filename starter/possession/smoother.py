@@ -137,10 +137,37 @@ def viterbi(emission, switch_team, switch_dead):
 
 
 _MODELS = {}
+EVENT_KINDS = ("corner", "goal kick", "goal")
+FORCED = -1e4  # log score of H and A on a dead frame the smoother must keep
 
 
-def smooth(ctx, labels, kick, report):
-    """Rule 17 on one half's labels (in place): frames from the kickoff on are re-decided."""
+def kept_dead(ctx, labels, restarts, stoppages, mode):
+    """Bool per frame of the half: dead frames of the rules' stoppages that the smoother keeps.
+    mode 'events': goal-line exits (corner, goal kick, goal) and free-kick tags; 'all': every
+    restart (also throw-ins and next-touch restarts) and free-kick tag; 'off': none."""
+    keep = np.zeros(len(labels), dtype=bool)
+    if mode == "off":
+        return keep
+    spans = [(t, end) for t, (end, _team, kind) in restarts.items() if mode == "all" or kind in EVENT_KINDS]
+    spans += [(t, end) for t, (end, _team) in stoppages.items()]
+    for start, end in spans:
+        a, b = max(start - ctx.first, 0), min(end - ctx.first, len(labels))
+        if a < b:
+            keep[a:b] = True
+    return keep & (labels == "D")
+
+
+def emissions(model, feats, prior_strength, keep=None):
+    """Log emission scores (n, 3); H and A ruled out on kept dead frames."""
+    e = predict_log_proba(model, feats) - prior_strength * np.log(np.array(model["prior"]))
+    if keep is not None and keep.any():
+        e[keep, :2] = FORCED
+    return e
+
+
+def smooth(ctx, labels, kick, report, keep=None):
+    """Rule 17 on one half's labels (in place): frames from the kickoff on are re-decided.
+    keep: bool per frame, dead frames that stay dead (kept_dead)."""
     p = ctx.params
     if not p.smoother:
         return labels
@@ -151,8 +178,7 @@ def smooth(ctx, labels, kick, report):
     start = max(kick - ctx.first, 0)
     if start >= len(labels) - 1:
         return labels
-    logp = predict_log_proba(model, features(ctx, labels))[start:]
-    emission = logp - np.log(np.array(model["prior"])) * p.smoother_prior
+    emission = emissions(model, features(ctx, labels), p.smoother_prior, keep)[start:]
     path_idx = viterbi(emission, p.switch_team, p.switch_dead)
     new = np.array(CLASSES, dtype=labels.dtype)[path_idx]
     report.set("smoother changed frames", int((labels[start:] != new).sum()))

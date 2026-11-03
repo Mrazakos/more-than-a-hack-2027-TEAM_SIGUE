@@ -158,7 +158,8 @@
   "switch_dead": 32.0,
   "smoother_prior": 0.0,
   "min_spell": 1.0,
-  "min_dead": 1.0
+  "min_dead": 1.0,
+  "smoother_keep_dead": "off"
  },
  "heldout": {
   "ctrl": {

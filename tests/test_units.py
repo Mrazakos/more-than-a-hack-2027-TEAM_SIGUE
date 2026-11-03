@@ -96,6 +96,16 @@ class Smoother(unittest.TestCase):
         self.assertEqual(list(cheap[0]), seq)  # cheap switches follow every blip
         self.assertEqual(list(cheap[1]), list(path))
 
+    def test_kept_dead_follows_the_mode(self):
+        from possession.smoother import kept_dead
+        ctx = types.SimpleNamespace(first=100)
+        labels = labels_of("H" * 10 + "D" * 10 + "H" * 10 + "D" * 10)
+        restarts = {110: (120, None, "corner"), 130: (140, None, "throw-in")}
+        events = kept_dead(ctx, labels, restarts, {}, "events")
+        self.assertEqual(list(np.flatnonzero(events)), list(range(10, 20)))
+        self.assertEqual(int(kept_dead(ctx, labels, restarts, {}, "all").sum()), 20)
+        self.assertFalse(kept_dead(ctx, labels, restarts, {}, "off").any())
+
     def test_smoother_off_by_default(self):
         self.assertFalse(Params().smoother)
 

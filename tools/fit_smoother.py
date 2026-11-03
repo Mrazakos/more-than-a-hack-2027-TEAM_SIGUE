@@ -36,7 +36,11 @@ from possession import smoother as sm  # noqa: E402
 from possession.context import HalfContext  # noqa: E402
 from possession.labeller import label_half  # noqa: E402
 from possession.report import Report  # noqa: E402
+from possession.rules.kickoff import find_kickoff  # noqa: E402
 from possession.rules.postprocess import min_spells  # noqa: E402
+from possession.rules.restarts import find_restarts  # noqa: E402
+from possession.rules.stoppages import free_kick_stoppages  # noqa: E402
+from possession.rules.touch import find_touches  # noqa: E402
 
 sys.path.insert(0, os.path.join(ROOT, "starter"))
 from externally_tuned import TUNED  # noqa: E402
@@ -47,6 +51,7 @@ SWITCH_DEAD = (16.0, 24.0, 32.0, 48.0, 64.0, 96.0)
 PRIOR = (0.0, 0.25)
 MIN_SPELL = (0.0, 0.5, 1.0, 1.5)
 MIN_DEAD = 1.0
+KEEP_DEAD = ("off", "events", "all")
 SUBSAMPLE = 4          # every 4th frame is a training row
 CODE = {"H": 0, "A": 1, "D": 2}
 
@@ -68,8 +73,12 @@ def collect(data):
                 ctx = HalfContext(md, BASE, half, first, last)
                 report = Report()
                 labels = label_half(ctx, report)
+                kick = find_kickoff(ctx, ctx.tags.kickoffs.get(ctx.half))  # the tables label_half used
+                restarts = find_restarts(ctx, kick, find_touches(ctx).gets_it, Report())
+                stoppages = free_kick_stoppages(ctx, kick, Report())
+                keeps = {mode: sm.kept_dead(ctx, labels, restarts, stoppages, mode) for mode in KEEP_DEAD}
                 halves.append((first, last, report.kickoff, labels,
-                               sm.features(ctx, labels).astype(np.float32)))
+                               sm.features(ctx, labels).astype(np.float32), keeps))
             item = (match, seed, halves, data.raw[match], data.ctrl[match], len(md.ball_x))
             with open(_item_path(len(items)), "wb") as handle:
                 pickle.dump(item, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -92,7 +101,7 @@ def training_rows(items, matches):
     for match, _seed, halves, gt_raw, _c, _n in items:
         if match not in matches:
             continue
-        for first, last, kick, _labels, feats in halves:
+        for first, last, kick, _labels, feats, _keeps in halves:
             frames = np.arange(kick, last + 1, SUBSAMPLE)
             X.append(feats[frames - first].astype(float))
             y.append(gt_raw[frames])
@@ -117,36 +126,35 @@ def score_item(args):
     gt_raw_c, gt_ctrl_c = gt_raw, gt_ctrl
     out = {}
     if model is None:
-        settings = [(None, None, None, ms) for ms in MIN_SPELL]
+        settings = [(None, None, None, ms, None) for ms in MIN_SPELL]
         variants = {None: [h[3] for h in halves]}
     else:
         settings, variants = [], {}
         grid = list(itertools.product(SWITCH_TEAM, SWITCH_DEAD))
-        for prior in PRIOR:
+        for prior, mode in itertools.product(PRIOR, KEEP_DEAD):
             per_half = []
-            for first, last, kick, labels, feats in halves:
+            for first, last, kick, labels, feats, keeps in halves:
                 start = kick - first
-                emission = sm.predict_log_proba(model, feats.astype(float))[start:] - prior * np.log(np.array(model["prior"]))
-                paths = sm.viterbi_batch(emission, grid)
-                per_half.append(paths)
+                emission = sm.emissions(model, feats.astype(float), prior, keeps[mode])[start:]
+                per_half.append(sm.viterbi_batch(emission, grid))
             for gi, (st, sd) in enumerate(grid):
                 halves_labels = []
-                for (first, last, kick, labels, _f), paths in zip(halves, per_half):
+                for (first, last, kick, labels, _f, _k), paths in zip(halves, per_half):
                     new = labels.copy()
                     new[kick - first:] = np.array(sm.CLASSES, dtype=labels.dtype)[paths[gi]]
                     halves_labels.append(new)
-                variants[(st, sd, prior)] = halves_labels
-                settings += [(st, sd, prior, ms) for ms in MIN_SPELL]
-    for st, sd, prior, ms in settings:
-        key = None if model is None else (st, sd, prior)
+                variants[(st, sd, prior, mode)] = halves_labels
+                settings += [(st, sd, prior, ms, mode) for ms in MIN_SPELL]
+    for st, sd, prior, ms, mode in settings:
+        key = None if model is None else (st, sd, prior, mode)
         full = np.full(n, "X", dtype="<U1")
-        for (first, last, _k, _l, _f), labels in zip(halves, variants[key]):
+        for (first, last, _k, _l, _f, _kp), labels in zip(halves, variants[key]):
             lab = labels.copy()
             if ms > 0:
                 min_spells(_fake_ctx(ms), lab, Report())
             full[first:last + 1] = lab
         codes = pm.label_codes(full)
-        out[(st, sd, prior, ms)] = (spell_f1(gt_ctrl_c, codes), spell_f1(gt_raw_c, codes))
+        out[(st, sd, prior, ms, mode)] = (spell_f1(gt_ctrl_c, codes), spell_f1(gt_raw_c, codes))
     return out
 
 
@@ -190,14 +198,14 @@ def main():
             s17 = best_setting(tab, train)
             s16 = best_setting(rules_tab, train)
             h17, h16 = tab[s17][held], rules_tab[s16][held]
-            base = rules_tab[(None, None, None, 0.0)][held]
+            base = rules_tab[(None, None, None, 0.0, None)][held]
             rows.append((held, base, h16, h17, s16, s17))
             print("hold out {}: rules {:.4f}/{:.4f}  +16 {:.4f}/{:.4f} (min_spell {})  +17 {:.4f}/{:.4f} {}  "
                   "[ctrl/raw]  {:.0f}s".format(held, base[0], base[1], h16[0], h16[1], s16[3], h17[0], h17[1],
                                                s17, time.time() - t0), flush=True)
             tune_dfl.log({"name": "smoother:heldout", "held_out": held, "base": base, "rule16": h16,
                           "rule16_setting": s16[3], "smoother": h17, "smoother_setting": list(s17),
-                          "mask": data.mask_kind, "seeds": data.seeds})
+                          "seeds": data.seeds})
         means = {k: np.mean([np.mean(r[i]) for r in rows]) for i, k in ((1, "rules"), (2, "+16"), (3, "+17+16"))}
         ctrl = {k: np.mean([r[i][0] for r in rows]) for i, k in ((1, "rules"), (2, "+16"), (3, "+17+16"))}
         raw = {k: np.mean([r[i][1] for r in rows]) for i, k in ((1, "rules"), (2, "+16"), (3, "+17+16"))}
@@ -211,10 +219,10 @@ def main():
         model = sm.fit(X, y)
         tab = table(pool, items, model)
         final = best_setting(tab, ids)
-    print("final (all 7): switch_team {} switch_dead {} smoother_prior {} min_spell {} -> objective {:.4f}".format(
+    print("final (all 7): switch_team {} switch_dead {} smoother_prior {} min_spell {} keep_dead {} -> objective {:.4f}".format(
         *final, objective(tab[final], ids)))
     model["chosen"] = {"switch_team": final[0], "switch_dead": final[1], "smoother_prior": final[2],
-                       "min_spell": final[3], "min_dead": MIN_DEAD}
+                       "min_spell": final[3], "min_dead": MIN_DEAD, "smoother_keep_dead": final[4]}
     model["heldout"] = {"ctrl": ctrl, "raw": raw}
     model["source"] = ("DFL open data (Bassek et al. 2025, CC BY 4.0), 7 matches, ball hidden by "
                        "tools/degrade.context_mask, base settings starter/externally_tuned.TUNED")

@@ -81,6 +81,8 @@ class Params:
     smoother_prior: float = 1.0    # how far the class shares are divided out (0 = posterior as is)
     switch_team: float = 8.0       # log cost of an H <-> A change
     switch_dead: float = 8.0       # log cost of going into or out of D
+    smoother_keep_dead: str = "off"  # dead balls the smoother may not undo: "off", "events" (goal-line
+                                     # exits and free-kick tags), "all" (also throw-ins / next touch)
 
     # -- signal processing ------------------------------------------------------------------------
     smooth_frames: int = 15        # rolling-median window for the smoothed ball speed
