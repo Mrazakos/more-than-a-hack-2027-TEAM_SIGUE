@@ -2,7 +2,7 @@
 
     1. event tables   kickoff -> touches -> restarts -> free-kick and slow stoppages
     2. the pass       rules/pass_loop.run_pass  (the only code that writes the labels)
-    3. tidy-up        shape veto (15) -> dead tail (14) -> merge gaps (9)
+    3. tidy-up        shape veto (15) -> dead tail (14) -> merge gaps (9) -> smoother (17) -> minimum runs (16)
 """
 
 import numpy as np
@@ -13,10 +13,11 @@ from .context import HalfContext
 from .report import Report
 from .rules.kickoff import find_kickoff
 from .rules.pass_loop import run_pass
-from .rules.postprocess import dead_tail, kick_restart_frames, merge_gaps, shape_veto
+from .rules.postprocess import dead_tail, kick_restart_frames, merge_gaps, min_spells, shape_veto
 from .rules.restarts import find_restarts
 from .rules.stoppages import free_kick_stoppages, slow_stoppages
 from .rules.touch import find_touches
+from .smoother import smooth
 from .trace import Tracer
 
 
@@ -36,6 +37,8 @@ def label_half(ctx, report):
     shape_veto(ctx, labels, report)
     dead_tail(ctx, labels, kick, kick_restarts)
     merge_gaps(ctx, labels, kick, report)
+    smooth(ctx, labels, kick, report)
+    min_spells(ctx, labels, report)
     tracer.flush(labels)
     return labels
 

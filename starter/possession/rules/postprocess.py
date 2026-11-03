@@ -59,6 +59,46 @@ def dead_tail(ctx, labels, kick, kick_restarts):
     return labels
 
 
+def min_spells(ctx, labels, report):
+    """Rule 16: no possession shorter than min_spell seconds and no stoppage shorter than min_dead
+    seconds. The shortest such run goes first: to its neighbour if both neighbours agree, otherwise
+    to the longer neighbour; repeated until every run is long enough. (DFL: matched possessions are
+    rarely under 4 s, false ones mostly under 2 s.)"""
+    p = ctx.params
+    limit = {"H": p.min_spell * ctx.fps, "A": p.min_spell * ctx.fps, "D": p.min_dead * ctx.fps}
+    if limit["H"] <= 0 and limit["D"] <= 0:
+        return labels
+    bounds = segment_bounds(labels)
+    kinds = [labels[s] for s in bounds[:-1]]
+    sizes = list(np.diff(bounds))
+    absorbed = 0
+    while len(kinds) > 1:
+        short = [i for i in range(len(kinds)) if sizes[i] < limit.get(kinds[i], 0)]
+        if not short:
+            break
+        i = min(short, key=lambda k: (sizes[k], k))
+        left = kinds[i - 1] if i > 0 else None
+        right = kinds[i + 1] if i + 1 < len(kinds) else None
+        if left is None or (right is not None and left != right and sizes[i + 1] > sizes[i - 1]):
+            j = i + 1
+        else:
+            j = i - 1
+        sizes[j] += sizes[i]
+        del kinds[i], sizes[i]
+        absorbed += 1
+        # the neighbours on both sides may now be the same label: join them
+        k = min(i, j)
+        if 0 < k < len(kinds) and kinds[k - 1] == kinds[k]:
+            sizes[k - 1] += sizes[k]
+            del kinds[k], sizes[k]
+        if k + 1 < len(kinds) and kinds[k] == kinds[k + 1]:
+            sizes[k] += sizes[k + 1]
+            del kinds[k + 1], sizes[k + 1]
+    labels[:] = np.repeat(np.array(kinds, dtype=labels.dtype), sizes)
+    report.set("short runs absorbed", absorbed)
+    return labels
+
+
 def merge_gaps(ctx, labels, kick, report):
     """Rule 9: join dead stretches at most merge_gap seconds apart, the players walking between."""
     p = ctx.params

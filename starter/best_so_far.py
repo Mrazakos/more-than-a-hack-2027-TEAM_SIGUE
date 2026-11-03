@@ -56,6 +56,12 @@ and 12 were tried and taken out, and so was a flight rule in 2):
      difference AUC 0.95, starter/team_shape_check.py). A possession of at most SHAPE_MAX (5 s)
      with the other team on both sides, whose team is on average at least SHAPE_VETO (6 m)
      narrower than the other, goes to the other team. --shape-veto M sets it, 0 turns it off.
+  17. (off here) A learned smoother: a three-state H/A/D hidden Markov model over the labels so
+     far, its per-frame scores from a logistic regression on the rules' labels and tracking
+     signals, fitted on the DFL open matches only (possession/smoother.py, tools/fit_smoother.py).
+  16. (off here) No possession shorter than MIN_SPELL and no stoppage shorter than MIN_DEAD: the
+     shortest such run goes to its neighbours, shortest first (possession/rules/postprocess.py).
+     Rules 16 and 17 run last, 17 first; starter/externally_tuned.py --smoother turns both on.
 
 Also: --ball FILE takes the ball from a fused track (starter/ball_fusion.py, from your own ball
 detector) instead of the ATD's; --trace FROM TO prints the pass frame by frame (labels unchanged).

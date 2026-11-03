@@ -71,6 +71,17 @@ class Params:
     shape_max: float = 5.0         # s: only possessions this short are judged
     shape_smooth: int = 25         # frames the width difference is averaged over
 
+    # -- rule 16: minimum run lengths (0 = off) ---------------------------------------------------
+    min_spell: float = 0.0         # s: a shorter possession goes to a neighbouring run
+    min_dead: float = 0.0          # s: a shorter stoppage goes to a neighbouring run
+
+    # -- rule 17: learned H/A/D smoother (possession/smoother.py) -------------------------------
+    smoother: bool = False         # off by default
+    smoother_model: Optional[str] = None  # JSON coefficients; None = possession/smoother_dfl.json
+    smoother_prior: float = 1.0    # how far the class shares are divided out (0 = posterior as is)
+    switch_team: float = 8.0       # log cost of an H <-> A change
+    switch_dead: float = 8.0       # log cost of going into or out of D
+
     # -- signal processing ------------------------------------------------------------------------
     smooth_frames: int = 15        # rolling-median window for the smoothed ball speed
     tempo_frames: int = 50         # the tempo: median player speed averaged over this many frames (2 s)
