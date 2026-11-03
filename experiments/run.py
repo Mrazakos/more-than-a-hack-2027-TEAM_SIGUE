@@ -4,7 +4,7 @@
         [--script starter/best_so_far.py] -- [labeller flags ...]
 
 Example:
-    python experiments/run.py baseline --note "reference"
+    python experiments/run.py best_so_far --note "reference"
     python experiments/run.py touch1.2 -- --nearest-radius 1.2
 
 Everything after `--` goes to the labeller unchanged. The labels go to experiments/out/NAME.csv
