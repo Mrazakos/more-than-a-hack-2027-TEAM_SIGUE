@@ -57,6 +57,11 @@ and 12 were tried and taken out, and so was a flight rule in 2):
      with the other team on both sides, whose team is on average at least SHAPE_VETO (6 m)
      narrower than the other, goes to the other team. --shape-veto M sets it, 0 turns it off.
 
+  16. [OFF, tried and negative] Smart Tagging's team-phase tags (progression, build up, defending...)
+     as a prior on the team. The tags agree with the truth on only 77% of frames (the system is at
+     91% there) and the veto overturned correct spells: spellF1 0.7333 -> 0.6143 at every margin
+     tried (experiments/log.jsonl). --phase-veto N turns it on; default 0.
+
 Also: --ball FILE takes the ball from a fused track (starter/ball_fusion.py, from your own ball
 detector) instead of the ATD's; --trace FROM TO prints the pass frame by frame (labels unchanged).
 
@@ -137,6 +142,12 @@ DEAD_TAIL = 17                # frames (dead_check: our ends were 17-18 frames e
 SHAPE_VETO = 6.0              # m (4-7 m all the same on the public window)
 SHAPE_MAX = 5.0               # s: only possessions this short are judged
 SHAPE_SMOOTH = 25             # frames the width difference is averaged over
+
+# Rule 16 (opt-in, --phase-veto): Smart Tagging's team-phase tags as a prior on who has the ball.
+PHASE_VETO = 0.0              # a short possession whose team the tags oppose by this much is flipped
+PHASE_ATTACK = ("progression", "build up", "creating chances", "long ball", "attacking transition")
+PHASE_DEFEND = ("defending in middle third", "defending in defensive third",
+                "defending in attacking third", "defensive transition")  # the tag names the DEFENDER
 
 SMOOTH_FRAMES = 15            # rolling-median window for the smoothed ball speed
 TRACE = None                  # --trace FROM TO
@@ -351,6 +362,23 @@ def smart_tagging(data_dir):
                 (event["start_frame"],
                  teams.get((event["tags"].get("Team") or "").strip().lower(), NOBODY)))
     return kickoffs, sorted(corners), sorted(goals), sorted(free_kicks)
+
+
+def phase_prior(data_dir, n_frames):
+    """Per frame: >0 when the phase tags say HOME has the ball, <0 for AWAY, 0 for no tag. An attack
+    tag votes for its team, a defending tag against it. The zone tags (players in the box, ball in
+    the final third / box) agreed with the truth on under 55% of frames and are not used."""
+    meta_path = require(["atd_meta"], GAME, data_dir)[0]
+    home, away = (name.strip().lower() for name in team_names(meta_path))
+    score = np.zeros(n_frames)
+    for event in load_smart_tagging.load(GAME, data_dir):
+        team = (event["tags"].get("Team") or "").strip().lower()
+        kind = event["code"].strip().lower()
+        if team not in (home, away) or kind not in PHASE_ATTACK + PHASE_DEFEND:
+            continue
+        sign = (1 if team == home else -1) * (-1 if kind in PHASE_DEFEND else 1)
+        score[max(event["start_frame"], 0):max(event["end_frame"] + 1, 0)] += sign
+    return score
 
 
 # -- the rules ------------------------------------------------------------------------------------
@@ -578,6 +606,24 @@ def label_half(first, last, f, kick_tag, corners, left_team, report, touch_radiu
                 vetoed += 1
         report["shape vetoes"] = vetoed
 
+    # Rule 16 (opt-in): the same short-possession-between-two-of-the-other-team's pattern, judged
+    # by the phase tags instead of the players' shape.
+    if PHASE_VETO > 0:
+        flipped = 0
+        phase = f["phase"][first:last + 1]
+        bounds = np.concatenate(([0], np.flatnonzero(labels[1:] != labels[:-1]) + 1, [n]))
+        for i in range(1, len(bounds) - 2):
+            s0, s1 = bounds[i], bounds[i + 1]
+            here, before, after = labels[s0], labels[s0 - 1], labels[s1]
+            if not (here in ("H", "A") and before == after and before in ("H", "A")
+                    and before != here and s1 - s0 <= SHAPE_MAX * fps):
+                continue
+            mine = phase[s0:s1].mean() * (1 if here == "H" else -1)
+            if mine <= -PHASE_VETO:
+                labels[s0:s1] = before
+                flipped += 1
+        report["phase vetoes"] = flipped
+
     # Rule 14: a stoppage that restarts with the next touch ends DEAD_TAIL frames later.
     if DEAD_TAIL > 0:
         before = labels.copy()  # decide on the labels as they were, not as they are being changed
@@ -630,6 +676,7 @@ def prepare(data_dir, keepers=True, ball_path=None):
     f["tempo"] = tempo(features)  # rules 8, 9
     f["width_diff"] = pd.Series(features["home_width"] - features["away_width"]).rolling(  # rule 15
         SHAPE_SMOOTH, center=True, min_periods=SHAPE_SMOOTH // 2).mean().to_numpy()
+    f["phase"] = phase_prior(data_dir, len(f["ball_x"])) if PHASE_VETO > 0 else None  # rule 16
     kickoffs, corners, goals, free_kicks = smart_tagging(data_dir)
     meta_path = require(["atd_meta"], GAME, data_dir)[0]
     _, left_first_half = keeper_sides(meta_path)
@@ -676,6 +723,8 @@ def main():
                         help="rule 15 (default 6; 0 = off)")
     parser.add_argument("--shape-max", type=float, default=SHAPE_MAX, metavar="S",
                         help="rule 15: only possessions up to S seconds are judged (default 5)")
+    parser.add_argument("--phase-veto", type=float, default=PHASE_VETO, metavar="N",
+                        help="rule 16: flip a short possession the phase tags oppose by N (default 0 = off)")
     parser.add_argument("--ball", default=None, metavar="FILE",
                         help="a fused ball track from ball_fusion.py instead of the ATD's ball")
     parser.add_argument("--trace", type=int, nargs=2, default=None, metavar=("FROM", "TO"),
@@ -686,7 +735,8 @@ def main():
     globals().update(SLOW_BACK=args.slow_back if args.slow_back > 0 else None,
                      GOAL_KICK_RULE=not args.no_goal_kick, PASS_BY=not args.no_pass_by,
                      DEAD_LEAD=args.dead_lead, DEAD_TAIL=args.dead_tail,
-                     SHAPE_VETO=args.shape_veto, SHAPE_MAX=args.shape_max, TRACE=args.trace)
+                     SHAPE_VETO=args.shape_veto, SHAPE_MAX=args.shape_max, TRACE=args.trace,
+                     PHASE_VETO=args.phase_veto)
 
     reports = []
     labels = label_match(prepare(args.data_dir, not args.no_keepers, args.ball), args.nearest_radius,
@@ -711,6 +761,7 @@ def main():
              "--shape-max": "_smax{:g}".format(args.shape_max),
              "--no-pass-by": "_nopb", "--no-backdate": "_nobd", "--no-free-kicks": "_nofk",
              "--no-goal-kick": "_nogk", "--no-slow-stop": "_noslow", "--no-keepers": "_nok",
+             "--phase-veto": "_pv{:g}".format(args.phase_veto),
              "--ball": "_ball", "--trace": ""}
     flags = [a.split("=")[0] for a in sys.argv[1:] if a.startswith("--")]
     name = "best_so_far_custom" if [f for f in flags if f not in named] else "best_so_far"
