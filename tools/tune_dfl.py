@@ -65,13 +65,12 @@ PARAM_GRID = [
 class Data:
     """The matches, parsed once, with the two ground truths and the degraded ball masks."""
 
-    def __init__(self, ids=None, mask_kind="context", seeds=2):
-        """mask_kind: 'context' (ATD missing rate by tempo and pitch zone, degrade.context_mask) or
-        'random' (the first mask, runs drawn at random). Degraded scores average over `seeds` masks."""
+    def __init__(self, ids=None, seeds=2):
+        """The ball is hidden by degrade.context_mask (the ATD's missing rate by tempo and pitch
+        zone); degraded scores average over `seeds` masks."""
         self.ids = ids or d.MATCH_IDS
-        self.mask_kind, self.seeds = mask_kind, seeds
-        pools = degrade.atd_ball_run_pools()
-        table = degrade.atd_context_table() if mask_kind == "context" else None
+        self.seeds = seeds
+        table = degrade.atd_context_table()
         self.matches, self.raw, self.ctrl, self.masks = {}, {}, {}, {}
         shares = []
         for i, match in enumerate(self.ids):
@@ -81,13 +80,9 @@ class Data:
             self.raw[match] = pm.label_codes(raw)
             self.ctrl[match] = pm.label_codes(d.controlled(raw, MIN_SECONDS))
             blocks = [tuple(int(v) for v in b) for b in m["blocks"]]
-            if mask_kind == "context":
-                match_tempo = tempo(d._player_speed(m), Params())
-                masks = [degrade.context_mask(blocks, match_tempo, m["ball_x"], float(m["pitch"][0]),
-                                              table, seed=1000 + 100 * s + i) for s in range(seeds)]
-            else:
-                masks = [degrade.ball_mask(blocks, len(raw), pools, seed=1000 + 100 * s + i)
-                         for s in range(seeds)]
+            match_tempo = tempo(d._player_speed(m), Params())
+            masks = [degrade.context_mask(blocks, match_tempo, m["ball_x"], float(m["pitch"][0]),
+                                          table, seed=1000 + 100 * s + i) for s in range(seeds)]
             self.masks[match] = masks
             inside = np.concatenate([np.arange(a, b + 1) for _h, a, b in blocks])
             shares += [float(np.mean(~mk[inside])) for mk in masks]
@@ -125,9 +120,9 @@ class Data:
 _WORKER_DATA = None
 
 
-def _init_worker(mask_kind, seeds):
+def _init_worker(seeds):
     global _WORKER_DATA
-    _WORKER_DATA = Data(mask_kind=mask_kind, seeds=seeds)
+    _WORKER_DATA = Data(seeds=seeds)
 
 
 def _score_task(args):
@@ -138,7 +133,7 @@ def _score_task(args):
 def make_pool(data, workers):
     """A process pool whose workers each hold their own Data (same masks: the seeds are fixed)."""
     from multiprocessing import Pool
-    return Pool(workers, initializer=_init_worker, initargs=(data.mask_kind, data.seeds))
+    return Pool(workers, initializer=_init_worker, initargs=(data.seeds,))
 
 
 def commit():
@@ -170,7 +165,7 @@ def mean_over(data, ids, params, degraded=True, truth=None, name="eval", note=""
         scores = {m: data.score(m, params, degraded, truth) for m in ids}
     avg = {k: float(np.nanmean([s[k] for s in scores.values()])) for k in ("spellF1", "macroF1", "transF1")}
     log({"name": name, "note": note, "degraded": degraded, "truth": truth, "matches": list(ids),
-         "mask": data.mask_kind if degraded else None, "seeds": data.seeds if degraded else None,
+         "seeds": data.seeds if degraded else None,
          "params_changed": changed(params), "mean": avg,
          "per_match": {m: {k: round(v, 4) for k, v in s.items()} for m, s in scores.items()}})
     return avg, scores
@@ -256,8 +251,6 @@ def main():
     parser.add_argument("--baseline", action="store_true")
     parser.add_argument("--tune", action="store_true")
     parser.add_argument("--pass", dest="passes", type=int, default=1)
-    parser.add_argument("--mask", choices=("context", "random"), default="context",
-                        help="how the ball is hidden (degrade.py); 'random' is the first, uniform mask")
     parser.add_argument("--seeds", type=int, default=2, help="degradation seeds averaged per score")
     parser.add_argument("--truth", choices=("ctrl", "raw", "both"), default="both",
                         help="the DFL truth the search optimises (both: the mean of ctrl and raw)")
@@ -271,7 +264,7 @@ def main():
         sys.path.insert(0, os.path.join(ROOT, "starter"))
         from externally_tuned import TUNED
         START = TUNED
-    data = Data(mask_kind=args.mask, seeds=args.seeds)
+    data = Data(seeds=args.seeds)
     if args.workers > 1:
         POOL = make_pool(data, args.workers)
     if args.baseline or not args.tune:

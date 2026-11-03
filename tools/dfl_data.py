@@ -297,14 +297,10 @@ def read_tags(m, match):
     return SmartTags(kickoffs, sorted(corners), sorted(goals), sorted(free_kicks))
 
 
-def build_match(m, match, params, ball_mask=None, ball_noise=0.0, seed=0):
-    """A MatchData for the labeller. ball_mask (bool per frame, True = ball seen) and ball_noise
-    (m, Gaussian) degrade the ball towards what the ATD gives (see degrade.py)."""
+def build_match(m, match, params, ball_mask=None):
+    """A MatchData for the labeller. ball_mask (bool per frame, True = ball seen) hides the ball
+    the way the ATD does (degrade.context_mask)."""
     bx, by = m["ball_x"].copy(), m["ball_y"].copy()
-    if ball_noise > 0:
-        rng = np.random.default_rng(seed)
-        bx = bx + rng.normal(0, ball_noise, len(bx))
-        by = by + rng.normal(0, ball_noise, len(by))
     if ball_mask is not None:
         bx[~ball_mask] = np.nan
         by[~ball_mask] = np.nan

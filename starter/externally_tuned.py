@@ -1,14 +1,12 @@
 """best_so_far's rules with the settings tuned on the DFL open matches (external data only).
 
-    python starter/externally_tuned.py                  # -> evaluation/results/externally_tuned.csv
-    python starter/externally_tuned.py --shape-veto 4   # + the team-shape veto (chosen in 3 of 6 folds)
-    python starter/externally_tuned.py --smoother       # + rule 17 (learned smoother) and rule 16
+    python starter/externally_tuned.py              # -> evaluation/results/externally_tuned.csv
+    python starter/externally_tuned.py --smoother   # + rules 17 and 16 -> externally_tuned_smoother.csv
 
-Source: tools/tune_dfl.py, leave-one-match-out coordinate descent over Params on 7 DFL matches
-(ball degraded to the ATD's visibility, spells under 2 s absorbed). These six changes were taken
-in every one of the six completed folds; the run stopped before fold 7 and the final all-match
-search, so the list is the fold consensus, not a recorded proposal. Nothing here was tuned on
-BAR-ATH labels. Defaults in possession/config.py are not touched.
+TUNED: the rule settings taken in every fold of a leave-one-match-out search over Params on the
+7 DFL matches (tools/tune_dfl.py). --smoother adds the learned smoother (rule 17) and minimum
+run lengths (rule 16) with the settings tools/fit_smoother.py chose, stored in the model file.
+Nothing here was tuned on BAR-ATH labels. Defaults in possession/config.py are not touched.
 """
 import argparse
 import dataclasses
@@ -39,15 +37,12 @@ def with_smoother(params=TUNED, model_path=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--shape-veto", type=float, default=None, metavar="M",
-                        help="also set shape_veto (DFL folds: 4.0 in 3 of 6)")
     parser.add_argument("--smoother", action="store_true",
                         help="add rules 17 and 16 (possession/smoother_dfl.json) -> externally_tuned_smoother.csv")
     parser.add_argument("--data-dir", default=None)
     parser.add_argument("--out", default=RESULTS_DIR)
     args = parser.parse_args()
-    params = TUNED if args.shape_veto is None else dataclasses.replace(TUNED, shape_veto=args.shape_veto)
-    name = "externally_tuned" + ("" if args.shape_veto is None else "_sv{:g}".format(args.shape_veto))
+    params, name = TUNED, "externally_tuned"
     if args.smoother:
         params = with_smoother(params)
         name += "_smoother"

@@ -1,14 +1,10 @@
 """Make external tracking look like the ATD: where the ball is lost, and for how long.
 
-DFL's optical tracking has the ball on every frame; the ATD loses it on about 41% of graded frames.
-The mask here is drawn from the ATD's own run lengths (visible runs and missing runs, inside the
-two halves) -- ATD tracking only, no labels and no video. Seeded, so two parameter sets are scored
-on identical degraded input.
+DFL's optical tracking has the ball on every frame; the ATD loses it on about 41% of graded frames,
+and not at random (context_mask below). Everything here is read from the ATD's tracking only -- no
+labels and no video. Seeded, so two parameter sets are scored on identical degraded input.
 
-Two masks:
-  * ball_mask (the first one): alternating runs drawn at random from the ATD's run lengths. It
-    assumes the gaps are not tied to play -- they are (see the context mask below).
-  * context_mask (the default for tuning): the ATD's missing rate by tempo and pitch zone.
+    python tools/degrade.py     # the ATD's gap statistics and its P(missing) table
 """
 
 import os
@@ -32,7 +28,8 @@ def runs(flags):
 
 
 def atd_ball_run_pools(data_dir=None):
-    """(visible run lengths, missing run lengths, missing share) of the ATD ball inside the halves."""
+    """(visible run lengths, missing run lengths, missing share) of the ATD ball inside the halves:
+    what context_mask's run lengths are checked against."""
     from games import GAME, half_video_blocks
     from possession.tracking import load_features
     seen = ~np.isnan(load_features(data_dir)["ball_x"])
@@ -45,21 +42,6 @@ def atd_ball_run_pools(data_dir=None):
         total += len(span)
         lost += int((~span).sum())
     return np.concatenate(visible), np.concatenate(missing), lost / total
-
-
-def ball_mask(blocks, n_frames, pools, seed):
-    """Bool per frame, True where the ball is 'seen': alternating runs sampled from the ATD pools."""
-    visible, missing, _share = pools
-    rng = np.random.default_rng(seed)
-    mask = np.zeros(n_frames, dtype=bool)
-    for _half, first, last in blocks:
-        t, state = first, bool(rng.random() < 0.5)
-        while t <= last:
-            length = int(rng.choice(visible if state else missing))
-            mask[t:min(t + length, last + 1)] = state
-            t += length
-            state = not state
-    return mask
 
 
 # -- context mask ----------------------------------------------------------------------------------

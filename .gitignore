@@ -66,8 +66,6 @@ env/
 # -- experiment outputs (full label files) ----------------------------------------------------
 experiments/out/
 
-# external datasets used for tuning (licensed separately, large)
+# external datasets used for tuning (licensed separately, large), and the log of every DFL run
 data_external/
-
-# local git worktrees (Claude Code sessions)
-.claude/worktrees/
+experiments/external_log.jsonl
